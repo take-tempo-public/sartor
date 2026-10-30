@@ -1058,18 +1058,54 @@ class TestCertifications:
                 c for s in profile["sections"] if s["kind"] == "certifications" for c in s["items"]
             ):
                 tier = tier_of[cert["name"]]
-                if tier == "entry":
-                    continue
-                starts = [int(r["start"][:4]) for r in roles if r["title"] == facts["titles"][tier]]
+                # An entry-tier credential has no role titled for it: it is held before the career begins.
+                starts = [
+                    int(r["start"][:4])
+                    for r in roles
+                    if tier == "entry" or r["title"] == facts["titles"][tier]
+                ]
                 control(len(starts) >= 1, f"the lead cell must have a {tier}-titled role: {roles}")
                 checked += 1
                 if int(cert["year"]) > min(starts):
                     late.append(
                         f"{facts['profession']}: {cert['name']} {cert['year']} > role {min(starts)}"
                     )
-        control(checked == 80, f"expected 40 cells x 2 credentials above entry, checked {checked}")
+        control(checked == 120, f"expected 40 cells x 3 credentials, checked {checked}")
         assert not late, (
             f"{len(late)} of {checked} credentials are dated after their role: {late[:3]}"
+        )
+
+    @pytest.mark.parametrize("level", ["entry", "mid", "lead"])
+    def test_an_entry_tier_credential_is_dated_no_later_than_the_first_role(
+        self, level: str
+    ) -> None:
+        # Item 194 finding 1: a teaching licence dated 2026 against a role from January 2025, while the posting
+        # calls it a condition of employment. Entry is the case that has no role of its own to be capped by,
+        # including a cell whose only credentials are entry-tier.
+        late: list[str] = []
+        checked = 0
+        for n in range(40):
+            facts = CERT_FACTS | {"profession": f"{CERT_FACTS['profession']}-{n}"}
+            profile = gs.build_profile(facts, _ladder(level), level)
+            first = min(
+                int(r["start"][:4])
+                for s in profile["sections"]
+                if s["kind"] == "experience"
+                for r in s["roles"]
+            )
+            for cert in (
+                c for s in profile["sections"] if s["kind"] == "certifications" for c in s["items"]
+            ):
+                if cert["name"] != "OSHA 30-Hour Card":
+                    continue
+                checked += 1
+                if int(cert["year"]) > first:
+                    late.append(f"{facts['profession']}: {cert['year']} > first role {first}")
+        control(
+            checked == 40, f"expected one entry-tier credential in each of 40 cells, got {checked}"
+        )
+        assert not late, (
+            f"{len(late)} of {checked} entry-tier credentials are dated after the career began: {late[:3]}"
         )
 
     @pytest.mark.parametrize(
@@ -1281,6 +1317,72 @@ class TestSlotText:
         problems = gs.check_prose(profile, prose)
         assert any("no text for slot 'r1.b1'" in p for p in problems)
         assert any("undeclared slot 'extra'" in p for p in problems)
+
+
+class TestJdCredentialStatus:
+    """Item 194 finding 2: a posting must not call a credential preferred when the facts name none to prefer.
+
+    Four committed postings said "Preferred candidates also hold a safety certification" in the about
+    paragraph while `needs` required the credential and named nothing to prefer. No check of the slot text
+    alone can see it: whether a preferred credential exists is a fact of the cell, kept in its `needs` brief.
+    """
+
+    PREFERRED = "Preferred candidates also hold a construction safety certification."
+
+    def _slot(self, level: str, which: str) -> tuple[dict[str, Any], str]:
+        profile = gs.build_profile(CERT_FACTS, _ladder(level), level)
+        jd = profile["jds"][0]  # the demo facts post a cell at more than one industry
+        (slot_id,) = [s for s in jd["slots"] if s.endswith(f".{which}")]
+        return profile, slot_id
+
+    @pytest.mark.parametrize("which", ["about", "duties", "needs"])
+    def test_a_cell_with_nothing_to_prefer_may_not_call_a_credential_preferred(
+        self, which: str
+    ) -> None:
+        profile, slot_id = self._slot("lead", which)  # a lead holds every credential
+        needs = profile["slots"][slot_id.rsplit(".", 1)[0] + ".needs"]["brief"]
+        control("as preferred" not in needs, "a lead cell has no credential above its tier")
+        found = gs.check_jd_credential_status(profile, slot_id, self.PREFERRED)
+        assert found
+        assert slot_id in found[0]
+        assert "preferred" in found[0]
+
+    def test_a_cell_with_a_credential_above_its_tier_may_say_so(self) -> None:
+        profile, slot_id = self._slot("mid", "about")  # the Master Licence is above a mid
+        needs = profile["slots"][slot_id.rsplit(".", 1)[0] + ".needs"]["brief"]
+        control("as preferred" in needs, "a mid cell has the Master Licence above its tier")
+        assert gs.check_jd_credential_status(profile, slot_id, self.PREFERRED) == []
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "Preferred: experience with Procore and Bluebeam Revu.",
+            "Candidates must meet every requirement listed under Licensure and qualifications.",
+            "No clinical licence or professional certification is required for this position.",
+            "A Journeyman Licence is required for this position.",
+        ],
+    )
+    def test_text_that_is_not_a_preferred_credential_passes(self, text: str) -> None:
+        profile, slot_id = self._slot("lead", "about")
+        assert gs.check_jd_credential_status(profile, slot_id, text) == []
+
+    def test_a_slot_that_is_not_a_jd_slot_is_not_checked(self) -> None:
+        profile, _ = self._slot("lead", "about")
+        assert gs.check_jd_credential_status(profile, "r1.b1", self.PREFERRED) == []
+
+    def test_check_prose_refuses_it_so_the_suite_gate_and_ci_fail_on_a_stale_cell(self) -> None:
+        profile, slot_id = self._slot("lead", "about")
+        prose = {"slots": {sid: "x" for sid in profile["slots"]}}
+        prose["slots"][slot_id] = self.PREFERRED
+        assert any(slot_id in p and "preferred" in p for p in gs.check_prose(profile, prose))
+
+    def test_the_check_and_the_builder_share_one_phrase(self) -> None:
+        # The check reads the builder's own words out of the `needs` brief; if they drifted the check would
+        # pass every posting, silently. Build a cell that has a preferred credential and read it back.
+        profile, slot_id = self._slot("entry", "needs")
+        assert gs.CERT_PREFERRED_PHRASE in profile["slots"][slot_id]["brief"]
+        profile, slot_id = self._slot("lead", "needs")
+        assert gs.CERT_PREFERRED_PHRASE not in profile["slots"][slot_id]["brief"]
 
 
 # ---------------------------------------------------------------------------------------------------

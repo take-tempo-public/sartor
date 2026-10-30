@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2022",
+      "issued": "2019",
       "issuer": "Business Skills Academy",
       "name": "Office Administration Certificate"
     }
@@ -46,7 +46,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Manages office budgets and vendor accounts through Microsoft Outlook, consolidating vendor correspondence and cutting late payments by 45 percent."
+          "text": "Manages office budgets and vendor accounts, using Microsoft Outlook to track quotes, approvals and follow-ups, which cut late vendor payments by 45 percent."
         },
         {
           "display_order": 1,
@@ -57,7 +57,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinates travel and event arrangements for staff, using calendar management to prevent booking conflicts and keep itineraries aligned with team schedules."
+          "text": "Coordinates travel and event arrangements for staff, applying calendar management to keep bookings, meetings and deadlines from overlapping."
         },
         {
           "display_order": 2,
@@ -68,7 +68,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Schedules managers' weeks around billing deadlines and pairs invoice processing with those calendars, reducing invoice approval delays by 45 percent."
+          "text": "Schedules meetings and deadlines for managers and links invoice processing to their calendars, reducing payment approval delays by 45 percent."
         },
         {
           "display_order": 3,
@@ -79,7 +79,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Trains new administrative staff on purchase ordering, office procedures and vendor records, giving each new hire a written checklist for their first weeks."
+          "text": "Trains new administrative staff on office procedures, including purchase ordering, vendor requests and approval steps."
         }
       ],
       "company": "Tillman Brothers",
@@ -99,7 +99,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Oversees office budgets and vendor relationships for Tillman Brothers as Senior Administrative Specialist, keeping spending and supplier records in order."
+          "text": "At Tillman Brothers, the role centres on managing office budgets and vendor relationships for the team."
         },
         {
           "display_order": 1,
@@ -109,7 +109,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Covers phones and greets visitors at Tillman Brothers, making sure every caller and guest reaches the right person without delay."
+          "text": "Handles phone and visitor coverage at Tillman Brothers, greeting guests and routing calls to the right staff."
         }
       ],
       "titles": [
@@ -146,7 +146,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Maintained filing and records upkeep, indexing meeting minutes and correspondence so staff could locate documents quickly."
+          "text": "Maintained filing and records upkeep, organizing meeting minutes and correspondence so staff could find documents quickly."
         },
         {
           "display_order": 2,
@@ -157,7 +157,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Recorded meeting notes and applied consistent document formatting to summaries, cutting turnaround time for distributed notes by 20 percent."
+          "text": "Produced meeting notes with consistent document formatting, cutting the time needed to circulate final notes by 20 percent."
         },
         {
           "display_order": 3,
@@ -168,7 +168,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Planned travel and event arrangements for staff, tracking bookings, budgets and attendee lists in Microsoft Excel."
+          "text": "Arranged travel and events for staff, tracking bookings, costs and attendee lists in Microsoft Excel."
         }
       ],
       "company": "Harlow and Daughters",
@@ -188,7 +188,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Processed expense reports for staff at Harlow and Daughters, checking receipts and coding costs before submission for approval."
+          "text": "At Harlow and Daughters, processed expense reports for staff and checked receipts before submitting them for approval."
         },
         {
           "display_order": 1,
@@ -198,7 +198,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Handled travel and event arrangements at Harlow and Daughters, organizing trips and logistics for staff meetings and company events."
+          "text": "Supported Harlow and Daughters staff by arranging travel and coordinating details for company events."
         }
       ],
       "titles": [
@@ -224,7 +224,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Managed schedules for store managers in Microsoft Outlook, reducing double-booked appointments by 30 percent."
+          "text": "Scheduled appointments and meetings for managers in Microsoft Outlook, reducing scheduling conflicts by 30 percent."
         },
         {
           "display_order": 1,
@@ -235,7 +235,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Answered phones and welcomed visitors, relying on calendar management to confirm appointments and direct guests to the right manager."
+          "text": "Covered phones and greeted visitors at the front desk, using calendar management to confirm appointments and direct guests."
         },
         {
           "display_order": 2,
@@ -246,7 +246,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Processed expense reports alongside invoice processing duties, shortening reimbursement turnaround by 35 percent through a simpler receipt review routine."
+          "text": "Processed staff expense reports alongside invoice processing duties, shortening reimbursement turnaround by 35 percent."
         },
         {
           "display_order": 3,
@@ -257,7 +257,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Handled purchase ordering for office and shop supplies, comparing vendor quotes and keeping stock levels steady."
+          "text": "Ordered office and shop supplies, handling purchase ordering and checking deliveries against each order."
         }
       ],
       "company": "Sutter Street Shop",
@@ -277,7 +277,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Arranged travel and events for Sutter Street Shop staff, organizing trip details and logistics for shop gatherings."
+          "text": "At Sutter Street Shop, arranged travel and helped organize events for managers and staff."
         },
         {
           "display_order": 1,
@@ -287,7 +287,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Kept files and records up to date at Sutter Street Shop, organizing paperwork so documents were easy to find."
+          "text": "Kept files and records up to date at Sutter Street Shop, supporting daily office operations."
         }
       ],
       "titles": [
@@ -372,7 +372,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Senior administrative support professional with about 8 years of experience in office operations and vendor coordination. Sets how the team handles purchase ordering, building consistent processes in Google Workspace and tying each order to accurate invoice processing."
+      "text": "Senior administrative support professional with about 8 years of experience in office operations, vendor coordination and scheduling. Sets how the team handles invoice processing and purchase ordering, using Google Workspace to keep requests, approvals and records in one place."
     },
     {
       "display_order": 1,
@@ -383,7 +383,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Administrative support specialist at senior level with about 8 years of experience across several offices. Defines the team's approach to invoice processing, coordinating purchase ordering and shared records in Google Workspace so approvals stay on schedule."
+      "text": "Administrative specialist with about 8 years of experience supporting managers and staff across busy offices. Defines the team's approach to purchase ordering and invoice processing, with shared Google Workspace tools for tracking orders and payments."
     }
   ],
   "tags": []

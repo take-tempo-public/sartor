@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Managing a team and answering for the results of the function."
       },
-      "edit_replacement": "Coordinates travel and event arrangements for staff and handles expense, managing a team and answering for the results of the function",
-      "edit_target_substring": "Coordinates travel and event arrangements for staff and handles expense",
+      "edit_replacement": "Arranges staff travel and event logistics and handles expense reporting, managing a team and answering for the results of the function",
+      "edit_target_substring": "Arranges staff travel and event logistics and handles expense reporting",
       "expected_iteration_themes": {
         "experience_probes": [
           "Invoice processing exposure not yet covered by prior clarifications"

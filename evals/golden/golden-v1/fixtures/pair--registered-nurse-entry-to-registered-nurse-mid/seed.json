@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2025",
       "issuer": "Resuscitation Training Council",
       "name": "Basic Life Support Card"
     }
@@ -55,7 +55,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Charts care planning notes in the clinic record after each patient visit, reducing documentation gaps by 15 percent."
+          "text": "Charts care planning updates in the patient record after each visit, reducing documentation errors flagged in chart reviews by 15 percent."
         },
         {
           "display_order": 1,
@@ -66,7 +66,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Reports vital signs monitoring trends during shift handoff so incoming nurses can act quickly on changes in patient condition."
+          "text": "Shares vital signs monitoring results and changes in patient condition clearly at each shift handoff so the incoming nurse can continue care without gaps."
         },
         {
           "display_order": 2,
@@ -77,7 +77,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Completes patient assessment before giving medications, reducing medication timing errors by 20 percent."
+          "text": "Gives medications after a patient assessment to confirm readiness and check for side effects, lowering medication-related follow-up calls by 20 percent."
         },
         {
           "display_order": 3,
@@ -88,7 +88,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinates with physicians on discharge planning, confirming orders and follow-up instructions before patients leave the clinic."
+          "text": "Coordinates with physicians on discharge planning, confirming orders, follow-up needs and patient instructions before each patient leaves the clinic."
         }
       ],
       "company": "Harborview Community Clinic",
@@ -108,7 +108,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Provides direct patient care at Harborview Community Clinic, keeping charting in the patient record accurate and current after each visit."
+          "text": "Graduate Registered Nurse at Harborview Community Clinic, responsible for accurate and timely charting in the patient record for each clinic visit."
         },
         {
           "display_order": 1,
@@ -118,7 +118,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Supports patients at Harborview Community Clinic by giving medications as ordered and checking each dose against the patient record."
+          "text": "Graduate Registered Nurse at Harborview Community Clinic, giving medications safely and checking patient responses under the guidance of senior nursing staff."
         }
       ],
       "titles": [
@@ -203,7 +203,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Entry-level registered nurse with about 2 years of experience providing patient care under close supervision on a defined share of the unit's work. Skilled in bedside handoff, vital signs monitoring and care planning, with a B.S.N. from Lakeshore University."
+      "text": "Entry-level graduate registered nurse handling a small share of patient care at a community clinic with a supervisor close by. Contributes bedside handoff, vital signs monitoring and care planning, and holds a Registered Nurse Licence and a Basic Life Support Card."
     },
     {
       "display_order": 1,
@@ -214,7 +214,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Graduate registered nurse with about 2 years of experience working alongside a supervising nurse on a small portion of daily patient care. Contributes through bedside handoff, vital signs monitoring and care planning, and holds a current Basic Life Support Card."
+      "text": "Graduate registered nurse with a B.S.N. in Nursing from Lakeshore University, working on a defined part of patient care with a supervisor nearby. Applies vital signs monitoring, care planning and bedside handoff to keep care safe and consistent between shifts."
     }
   ],
   "tags": []

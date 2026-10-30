@@ -9,40 +9,40 @@
     "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
     "prompt_version": "golden-author-2",
     "request_ids": [
-      "req_011CgVTvXwJ8vHwCddgUSzZj"
+      "req_011CgXPHgsKwjQ4XbBoxexLN"
     ],
     "requested_model": "claude-opus-5-5",
     "usage": {
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
       "input_tokens": 4598,
-      "output_tokens": 3578
+      "output_tokens": 3258
     }
   },
   "schema": 1,
   "slots": {
-    "jd.commercial-builder.about": "Position summary\nStonebridge Commercial Builders seeks a Senior Project Manager to lead commercial construction projects on site in Phoenix, AZ. The role oversees schedules, budgets, subcontractor coordination and safety planning from preconstruction through closeout. At minimum, candidates bring commercial project management experience, permit management and change order control. Preferred candidates also hold a construction safety certification.",
-    "jd.commercial-builder.duties": "Responsibilities\n- Lead regular site safety walks with superintendents and subcontractors and track corrective actions to closure.\n- Review submittals for compliance with drawings and specifications before release to the field.\n- Price change orders, negotiate with subcontractors and present recommendations to the owner.\n- Maintain project schedules and report progress at owner meetings.\n- Coordinate permits and inspections with local authorities.",
-    "jd.commercial-builder.needs": "Minimum and preferred qualifications\n- 8 or more years of commercial construction project management experience.\n- Working knowledge of Oracle Primavera, permit management and subcontractor coordination.\n- Demonstrated safety planning and contract administration on active job sites.\n- Experience with schedule recovery on projects that have fallen behind.\n- Construction Safety Manager Certificate required.\n- Preferred: experience with Procore and Bluebeam Revu.",
-    "r1.b1": "Leads weekly owner meetings that review safety planning, open hazards and upcoming site activities, cutting recordable incidents by 15 percent.",
-    "r1.b2": "Coordinates subcontractors across trades and processes change orders through pricing, review and approval before work proceeds in the field.",
-    "r1.b3": "Manages project managers and superintendents on schedule updates in Oracle Primavera, reducing late schedule submissions by 30 percent.",
-    "r1.b4": "Reviews submittals against drawings and specifications, using subcontractor coordination meetings to resolve gaps before material release.",
-    "r1.i1": "Tracks budgets and schedules across active projects at Marlow Contracting, reporting cost and milestone status to owners and project teams.",
-    "r1.i2": "Schedules permits and inspections for projects at Marlow Contracting, keeping approvals aligned with construction sequencing.",
-    "r2.b1": "Conducted site safety walks and paired them with submittal tracking reviews, reducing open safety and submittal items by 30 percent.",
-    "r2.b2": "Scheduled permits and inspections in Procore, giving field teams and inspectors a shared calendar of upcoming approvals.",
+    "jd.commercial-builder.about": "Position summary\nStonebridge Commercial Builders seeks a Senior Project Manager to lead commercial construction projects on site in Phoenix, AZ. The Senior Project Manager oversees budgets, schedules, subcontractor coordination and site safety from preconstruction through closeout. Minimum requirements include construction project management experience, scheduling software proficiency and knowledge of permit management. Preferred candidates hold a degree in construction management.",
+    "jd.commercial-builder.duties": "Responsibilities\n- Lead regular site safety walks with superintendents and subcontractors, and track corrective actions to closure.\n- Review submittals against contract documents and specifications before materials are released for fabrication.\n- Price change orders, verify subcontractor quotes and present cost and schedule impacts to the owner.\n- Maintain project budgets and schedules, and report status to company leadership.\n- Coordinate permits and inspections with local agencies to keep work sequenced.",
+    "jd.commercial-builder.needs": "Minimum and preferred qualifications\n- Minimum: 8 or more years of construction project management experience.\n- Minimum: Proficiency in Oracle Primavera, including schedule recovery on active projects.\n- Minimum: Experience with permit management, subcontractor coordination and safety planning.\n- Minimum: Working knowledge of contract administration on commercial projects.\n- Required certification: Construction Safety Manager Certificate.\n- Preferred: Bachelor's degree in construction management or a related field.",
+    "r1.b1": "Leads owner meetings that review safety planning and site progress, reducing open safety action items by 15 percent.",
+    "r1.b2": "Coordinates subcontractors through scope reviews and change orders, keeping trade work aligned with the approved contract.",
+    "r1.b3": "Manages project managers and superintendents using Oracle Primavera schedules, improving on-time milestone completion by 30 percent.",
+    "r1.b4": "Reviews submittals with trade partners, using subcontractor coordination to resolve comments before materials are released.",
+    "r1.i1": "Oversees budget and schedule tracking for construction projects at Marlow Contracting as Senior Project Manager.",
+    "r1.i2": "Directs permit and inspection scheduling across active projects at Marlow Contracting, keeping work sequenced around agency reviews.",
+    "r2.b1": "Led site safety walks tied to submittal tracking, confirming installed materials matched approvals and reducing field corrections by 30 percent.",
+    "r2.b2": "Scheduled permits and inspections in Procore, giving superintendents and inspectors a shared view of upcoming milestones.",
     "r2.b3": "Tracked budgets and schedules with Bluebeam Revu markups and quantity takeoffs, cutting cost report preparation time by 40 percent.",
-    "r2.b4": "Ran owner meetings covering permit management status, outstanding approvals and inspection results for each active project.",
-    "r2.i1": "Managed permit applications and inspection scheduling for projects at Copperfield Services, coordinating with authorities and field crews.",
-    "r2.i2": "Led site safety walks at Copperfield Services as Project Manager, recording hazards and assigning corrective actions to crews.",
-    "r3.b1": "Coordinated subcontractors on safety planning for each work phase, lowering safety observations requiring corrective action by 45 percent.",
-    "r3.b2": "Reviewed submittals and flagged scope changes, preparing change orders for project manager approval and owner review.",
-    "r3.b3": "Priced change orders and tied their schedule impacts to Oracle Primavera updates, shortening change order turnaround by 35 percent.",
-    "r3.b4": "Joined site safety walks and followed up through subcontractor coordination to confirm hazards were corrected.",
-    "r3.i1": "Supported site safety walks at Ironbridge Co, documenting hazards and tracking corrective actions with superintendents.",
-    "r3.i2": "Assisted with change order pricing at Ironbridge Co, assembling subcontractor quotes and cost backup for review.",
-    "summary.1": "Senior construction project manager with about 8 years of experience across project controls, permitting and subcontractor coordination. Sets how project teams handle submittal tracking, using Procore for logs and Bluebeam Revu for document review.",
-    "summary.2": "Construction project management professional with 8 years of experience leading budgets, schedules and safety planning on active job sites. Defines the team's approach to submittal tracking, standardizing review in Bluebeam Revu and status reporting in Procore."
+    "r2.b4": "Ran owner meetings covering permit management status, open inspections and upcoming approvals.",
+    "r2.i1": "Managed permit and inspection scheduling for construction projects at Copperfield Services as Project Manager.",
+    "r2.i2": "Conducted regular site safety walks and followed up on findings with field teams at Copperfield Services.",
+    "r3.b1": "Coordinated subcontractors on safety planning for each work phase, reducing site safety observations by 45 percent.",
+    "r3.b2": "Reviewed submittals against contract documents and flagged scope gaps for change orders before fabrication began.",
+    "r3.b3": "Priced change orders and modeled their schedule impact in Oracle Primavera, shortening change order turnaround by 35 percent.",
+    "r3.b4": "Joined site safety walks and used subcontractor coordination to assign and close corrective actions with trade foremen.",
+    "r3.i1": "Supported site safety walks and recorded findings for project teams at Ironbridge Co as Assistant Project Manager.",
+    "r3.i2": "Prepared change order pricing and backup documentation for project managers at Ironbridge Co.",
+    "summary.1": "Senior construction project manager with about 8 years of experience leading construction projects from planning through closeout. Sets how the team handles submittal tracking, standardizing reviews in Procore and markups in Bluebeam Revu.",
+    "summary.2": "Construction project management professional with about 8 years of experience across assistant, project and senior project manager roles. Defines the team's approach to submittal tracking, using Procore for routing and Bluebeam Revu for document review."
   }
 }

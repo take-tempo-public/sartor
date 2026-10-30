@@ -24,8 +24,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Guiding colleagues and handling the hardest cases."
       },
-      "edit_replacement": "Carries out pre-trip vehicle inspections and checks bills of lading, guiding colleagues and handling the hardest cases",
-      "edit_target_substring": "Carries out pre-trip vehicle inspections and checks bills of lading",
+      "edit_replacement": "Completes pre-trip vehicle inspections before each run and checks bills, guiding colleagues and handling the hardest cases",
+      "edit_target_substring": "Completes pre-trip vehicle inspections before each run and checks bills",
       "expected_iteration_themes": {
         "experience_probes": [
           "Route planning exposure not yet covered by prior clarifications"

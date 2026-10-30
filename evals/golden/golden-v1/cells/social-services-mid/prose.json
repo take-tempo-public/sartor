@@ -5,38 +5,38 @@
     "effort": "medium",
     "kind": "generated",
     "model": "claude-opus-5-5",
-    "profile_sha256": "sha256:51147187e70441da931954714ade635b9991c22079319115ab078a9b8b65391c",
+    "profile_sha256": "sha256:a9bbcfcfb940b19f03dfe75578c4590e4d3e12dd210ab316842ffd6a42c7edbb",
     "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
     "prompt_version": "golden-author-2",
     "request_ids": [
-      "req_011CgVkLFGUsdknLrnp6uRLx"
+      "req_011CgXPi84p6rKwg5SuqL7Ho"
     ],
     "requested_model": "claude-opus-5-5",
     "usage": {
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
       "input_tokens": 3736,
-      "output_tokens": 2096
+      "output_tokens": 2559
     }
   },
   "schema": 1,
   "slots": {
-    "jd.family-center.about": "Summary\nHarvest Table Family Center helps families in Akron build stable, secure homes. We are seeking a Case Manager to work on site with children and caregivers, connecting them to the services and support they need. Candidates must hold a current Case Management Certificate at the time of hire.",
-    "jd.family-center.duties": "Duties\n- Conduct home visits to check on family progress, safety and household needs.\n- Complete intake interviews with new families and gather required documents.\n- Carry out needs assessments and update them as family circumstances change.\n- Write service plans with clear goals and next steps, and review them with each family.\n- Keep case notes current and accurate in the agency database.\n- Coordinate with schools, clinics and community partners on referrals and follow-up.",
-    "jd.family-center.needs": "Licensure and qualifications\n- Required: Case Management Certificate.\n- Preferred: Human Services Supervisor Certificate.\n- 4 or more years of experience in case management or social services.\n- Working knowledge of referral coordination, benefits enrollment and needs assessments.\n- Ability to write clear case notes and track client data in Microsoft Access.\n- Experience with community outreach to families and local partner agencies.",
-    "r1.b1": "Coordinate with schools and clinics on findings from home visits, cutting missed follow-up appointments by 10 percent.",
-    "r1.b2": "Conduct intake interviews with families and refer them to housing and food programs that match their needs.",
-    "r1.b3": "Prepare reports for court hearings that document benefits enrollment progress, raising on-time report submissions by 55 percent.",
-    "r1.b4": "Complete intake and needs assessments for new clients, then handle referral coordination with partner agencies.",
-    "r1.i1": "Carries a caseload of families at Maple Court Care, conducting home visits to check on progress and plan next steps.",
-    "r1.i2": "Prepares reports for hearings at Maple Court Care, drawing on case records and home visit findings.",
-    "r2.b1": "Logged home visit notes in Microsoft Access, reducing time spent locating case files by 40 percent.",
-    "r2.b2": "Maintained case records used to draft court reports, keeping files complete and ready for review.",
-    "r2.b3": "Wrote service plans based on needs assessments, cutting plan turnaround time by 50 percent.",
-    "r2.b4": "Applied crisis intervention skills while coordinating with schools and clinics to stabilize tenants and their children.",
-    "r2.i1": "Supported caseworkers at Stonegate Housing Authority by gathering information for reports used in hearings.",
-    "r2.i2": "Kept case records accurate and current for tenants served by Stonegate Housing Authority.",
-    "summary.1": "Social services case manager with about 4 years of experience carrying a full caseload without close supervision. Skilled in benefits enrollment, referral coordination, court reports, home visits and crisis intervention.",
-    "summary.2": "Casework professional with about 4 years in housing and family services, managing a full caseload independently. Handles intake interviews, needs assessments, benefits enrollment, referral coordination and court reports from first contact to case closure."
+    "jd.family-center.about": "Summary\nHarvest Table Family Center is a family services nonprofit that helps local families build stable, healthy homes.\nWe are seeking an on-site Case Manager in Akron, OH to carry a caseload of families, conduct home visits and connect households with community resources. A Case Management Certificate is required for this position.",
+    "jd.family-center.duties": "Duties\n- Conduct home visits to assess family safety, stability and progress toward goals.\n- Complete intake interviews with new families and gather required documentation.\n- Perform needs assessments and update them as family circumstances change.\n- Write and revise individualized service plans in partnership with each family.\n- Coordinate referrals to housing, food and health programs and follow up on outcomes.",
+    "jd.family-center.needs": "Licensure and qualifications\n- Case Management Certificate required; Human Services Supervisor Certificate preferred.\n- 4 or more years of experience in social services casework.\n- Demonstrated skill in referral coordination, benefits enrollment and needs assessments.\n- Experience with community outreach and writing clear, timely case notes.\n- Working knowledge of Microsoft Access for tracking case data.",
+    "r1.b1": "Coordinates with schools and clinics through home visits, raising on-time service follow-up for families by 10 percent.",
+    "r1.b2": "Conducts intake interviews to identify family needs and refers households to housing and food programs.",
+    "r1.b3": "Prepares reports for hearings that document benefits enrollment progress, cutting report turnaround time by 55 percent.",
+    "r1.b4": "Handles intake and assessments for new families and manages referral coordination with partner agencies.",
+    "r1.i1": "Case Manager at Maple Court Care conducting home visits to assess family needs and connect households with services.",
+    "r1.i2": "Case Manager at Maple Court Care who prepares reports for hearings and keeps case documentation current for the court.",
+    "r2.b1": "Logged home visits in a Microsoft Access database, cutting time spent on visit records by 40 percent.",
+    "r2.b2": "Maintained case records and drafted court reports for hearings involving housing authority tenants.",
+    "r2.b3": "Wrote service plans based on needs assessments, reducing plan completion time by 50 percent.",
+    "r2.b4": "Coordinated with schools and clinics and applied crisis intervention when tenants faced urgent safety or housing issues.",
+    "r2.i1": "Case Aide at Stonegate Housing Authority supporting case staff by drafting reports for hearings involving tenant families.",
+    "r2.i2": "Case Aide at Stonegate Housing Authority responsible for keeping case records accurate, complete and ready for review.",
+    "summary.1": "Social services caseworker with about 4 years of experience carrying a full caseload without close supervision. Skilled in benefits enrollment, referral coordination and court reports, with a B.S.W. from Northern Plains University.",
+    "summary.2": "Case manager with 4 years of experience in social services casework, managing a full caseload independently. Handles benefits enrollment, referral coordination, court reports and needs assessments, and holds a Case Management Certificate."
   }
 }

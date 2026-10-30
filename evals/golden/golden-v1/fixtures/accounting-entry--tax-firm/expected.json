@@ -24,8 +24,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Handling routine requests with a colleague checking the work."
       },
-      "edit_replacement": "Reconciles bank accounts and ties fixed asset tracking records to, handling routine requests with a colleague checking the work",
-      "edit_target_substring": "Reconciles bank accounts and ties fixed asset tracking records to",
+      "edit_replacement": "Reconciles bank accounts each month and matches asset purchases against, handling routine requests with a colleague checking the work",
+      "edit_target_substring": "Reconciles bank accounts each month and matches asset purchases against",
       "expected_iteration_themes": {
         "experience_probes": [
           "SAP exposure not yet covered by prior clarifications"

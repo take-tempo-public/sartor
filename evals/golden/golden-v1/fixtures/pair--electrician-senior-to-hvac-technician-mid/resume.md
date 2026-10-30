@@ -4,33 +4,33 @@ riley.silva@example.com | (555) 010-5628 | linkedin.com/in/example-riley-electri
 
 ## Summary
 
-Master Electrician with about 9 years of experience planning jobs and checking the work of helpers, apprentices and journeymen. Applies blueprint reading, code compliance and troubleshooting to keep installations accurate and ready for inspection.
+Master electrician with about 9 years of experience planning jobs and checking the work of others. Applies blueprint reading, code compliance and troubleshooting to deliver installations that pass inspection.
 
 ## Experience
 
 ### Master Electrician — Copperfield Electric
 *November 2021 – present*
 
-- Plans jobs and orders materials against code compliance requirements before each start, cutting material returns by 15 percent.
-- Tests circuits on completed work, including lighting installation in new and renovated spaces, before handing systems over to the customer.
-- Directs helpers and apprentices through blueprint reading on each job, reducing layout errors by 40 percent.
-- Pulls and terminates wire on branch and feeder runs, confirming each connection through circuit testing before energizing.
+- Plans jobs and orders materials against code compliance requirements, cutting material waste by 15 percent.
+- Tests circuits on lighting installation work before handover, confirming each fixture and switch leg operates as designed.
+- Directs helpers and apprentices through blueprint reading on each job, reducing layout rework by 40 percent.
+- Pulls and terminates wire on new circuits and verifies every termination through circuit testing before energising.
 
 ### Journeyman Electrician — Ashford Industrial Electric
 *January 2019 – November 2021*
 
-- Ran conduit for new circuits, using load calculations to size runs and fill, and cut rework on conduit routes by 20 percent.
-- Installed panels and fixtures, applying conduit bending to route feeds cleanly around structural obstacles.
-- Tested circuits with methodical troubleshooting, reducing time spent locating faults by 40 percent.
-- Pulled and terminated wire on industrial circuits, applying grounding and bonding practices to each installation.
+- Ran conduit sized from load calculations, cutting conductor and conduit overruns by 20 percent.
+- Installed panels and fixtures, using conduit bending to route clean, code-ready runs to each location.
+- Tested circuits and applied troubleshooting to isolate faults, shortening repair time by 40 percent.
+- Pulled and terminated wire with grounding and bonding completed to specification on every panel and device.
 
 ### Apprentice Electrician — Brightline Wiring Company
 *June 2017 – January 2019*
 
-- Traced faults in existing wiring with attention to code compliance, cutting repeat service calls by 15 percent.
-- Read plans to locate fixtures and switching, supporting lighting installation under journeyman supervision.
-- Ran conduit from plan layouts using blueprint reading, reducing wasted material by 25 percent.
-- Installed panels and fixtures and verified each connection through circuit testing before final inspection.
+- Traced faults under supervision and checked repairs for code compliance, reducing inspection callbacks by 15 percent.
+- Read plans to locate fixtures and assisted with lighting installation across job sites.
+- Ran conduit using blueprint reading to set out plan layouts, cutting measurement errors by 25 percent.
+- Installed panels and fixtures and completed circuit testing on each run before inspection.
 
 ## Education
 
@@ -40,7 +40,7 @@ Master Electrician with about 9 years of experience planning jobs and checking t
 
 - Apprentice Registration Card — State Apprenticeship Council, 2017
 - Construction Safety Card — Safety Training Council, 2017
-- Journeyman Electrician Licence — State Licensing Board, 2019
+- Journeyman Electrician Licence — State Licensing Board, 2017
 - Master Electrician Licence — State Licensing Board, 2019
 
 ## Skills

@@ -4,33 +4,33 @@ harper.ito@example.com | (555) 010-5438 | linkedin.com/in/example-harper-logisti
 
 ## Summary
 
-Senior truck driver with about 9 years of experience in commercial driving and dispatch support, guiding newer drivers and taking on the hardest loads and routes. Skilled in trailer coupling, fuel and mileage logs and hours-of-service logging, and holds a Commercial Driver Licence and Hazardous Materials Endorsement.
+Senior truck driver with about 9 years of experience who guides newer drivers and takes on the hardest runs and delivery problems. Skilled in trailer coupling, fuel and mileage logs and hours-of-service logging, and holds a Commercial Driver Licence with a Hazardous Materials Endorsement.
 
 ## Experience
 
 ### Senior Truck Driver — Granite Ridge Transport
 *November 2023 – present*
 
-- Trains new drivers on pre-trip inspections and safe vehicle handling, cutting inspection-related delays by 50 percent.
-- Carries out pre-trip vehicle inspections and checks bills of lading against each load before leaving the yard.
-- Secures and checks every load, applying careful trailer coupling to reduce load shift incidents by 40 percent.
-- Coordinates with dispatch on pickups and drop-offs, keeping cargo documentation complete and current for each run.
+- Trains new drivers to complete pre-trip inspections thoroughly, cutting missed inspection items among new hires by 50 percent.
+- Completes pre-trip vehicle inspections before each run and checks bills of lading against the load before departure.
+- Secures and checks every load and verifies trailer coupling before departure, reducing load shift incidents by 40 percent.
+- Coordinates with dispatch on pickup and delivery changes and keeps cargo documentation current for each stop.
 
 ### Class A Truck Driver — Tidewater Haulers
 *September 2020 – November 2023*
 
-- Kept accurate driver logs and practised defensive driving on every route, lowering incident reports by 20 percent.
-- Reported vehicle defects to maintenance as soon as they were found, using hours-of-service logging to record downtime accurately.
-- Planned routes ahead of each run and confirmed customer signoff at delivery, reducing disputed deliveries by 35 percent.
-- Performed pre-trip vehicle inspections and kept fuel and mileage logs up to date for each truck.
+- Kept daily driver logs and practised defensive driving on every route, cutting recorded safety incidents by 20 percent.
+- Reported vehicle defects promptly to maintenance and noted them alongside hours-of-service logging so trucks were repaired before the next shift.
+- Planned routes around delivery windows and collected customer signoff at each stop, reducing late deliveries by 35 percent.
+- Performed pre-trip vehicle inspections and kept fuel and mileage logs current for every truck driven.
 
 ### Delivery Driver — Stonebridge Logistics
 *July 2017 – September 2020*
 
-- Secured and checked loads before departure, using pre-trip inspections to cut damaged deliveries by 50 percent.
-- Coordinated with dispatch on delivery changes and kept bills of lading matched to each shipment.
-- Delivered to customers on time, using quick and correct trailer coupling to shorten yard departures by 20 percent.
-- Maintained driver logs alongside cargo documentation for every stop on the delivery route.
+- Secured and checked loads during pre-trip inspections, reducing damaged freight claims by 50 percent.
+- Coordinated with dispatch on pickup changes and confirmed bills of lading before leaving each dock.
+- Delivered to customers on time by completing trailer coupling quickly and correctly, raising on-time deliveries by 20 percent.
+- Kept driver logs complete and matched cargo documentation to each delivery for accurate records.
 
 ## Education
 
@@ -38,8 +38,8 @@ Senior truck driver with about 9 years of experience in commercial driving and d
 
 ## Certifications
 
-- Driver Safety Certificate — Driver Safety Council, 2019
-- Commercial Driver Licence — State Motor Vehicle Agency, 2020
+- Driver Safety Certificate — Driver Safety Council, 2017
+- Commercial Driver Licence — State Motor Vehicle Agency, 2019
 - Hazardous Materials Endorsement — State Motor Vehicle Agency, 2022
 
 ## Skills

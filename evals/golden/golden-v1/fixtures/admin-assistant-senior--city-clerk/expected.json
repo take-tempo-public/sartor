@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Setting how the team handles one area of the work."
       },
-      "edit_replacement": "using calendar management to prevent booking conflicts and keep itineraries, setting how the team handles one area of the work",
-      "edit_target_substring": "using calendar management to prevent booking conflicts and keep itineraries",
+      "edit_replacement": "Coordinates travel and event arrangements for staff, setting how the team handles one area of the work",
+      "edit_target_substring": "Coordinates travel and event arrangements for staff",
       "expected_iteration_themes": {
         "experience_probes": [
           "Records filing exposure not yet covered by prior clarifications"

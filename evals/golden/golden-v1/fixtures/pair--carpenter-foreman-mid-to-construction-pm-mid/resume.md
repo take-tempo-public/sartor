@@ -4,25 +4,25 @@ alex.silva@example.com | (555) 010-2631 | linkedin.com/in/example-alex-carpenter
 
 ## Summary
 
-Journeyman carpenter with 4 years of experience who completes work to code without close supervision. Skilled in cabinet installation, layout and measuring, and jobsite safety.
+Journeyman carpenter with 4 years of experience completing carpentry work to code without close supervision. Skilled in cabinet installation, layout and measuring, and jobsite safety, backed by an apprenticeship certificate in carpentry.
 
 ## Experience
 
 ### Journeyman Carpenter — Wren Valley Builders
 *March 2025 – present*
 
-- Builds forms for concrete, using layout and measuring to set lines and grades before each pour, which has cut form rework by 20 percent.
-- Reads plans and takes measurements before cutting finish trim, so casing and base fit tight on the first install.
-- Orders lumber and materials for door and window installation from plan takeoffs, reducing wasted stock by 50 percent.
-- Frames walls and floors to plan, using blueprint reading to check dimensions and openings before nailing off.
+- Build forms for concrete using layout and measuring to set lines and grades, cutting rework on pours by 20 percent.
+- Check plans and measure each wall before cutting finish trim, so joints fit tight on the first install.
+- Order lumber and materials for door and window installation from plan takeoffs, reducing material waste by 50 percent.
+- Frame walls and floors to plan, using blueprint reading to place openings, beams and joists correctly.
 
 ### Apprentice Carpenter — Copperfield Construction
 *September 2022 – March 2025*
 
-- Kept the site safe by applying jobsite safety practices, including daily cleanup and tool checks, cutting reported near misses by 45 percent.
-- Installed doors, windows and trim, and assisted with concrete forming so openings lined up for the finish work.
-- Built forms for concrete and assisted with cabinet installation, reducing material waste on form work by 15 percent.
-- Read plans and measured heights to plan scaffold erection, setting up work platforms at the correct level for each task.
+- Kept the site safe by following jobsite safety practices and clearing hazards daily, reducing safety incidents on the crew by 45 percent.
+- Installed doors, windows and trim and supported concrete forming for footings and steps under journeyman direction.
+- Built forms for concrete and assisted with cabinet installation, cutting form setup time by 15 percent.
+- Read plans and measured work areas to plan scaffold erection, setting scaffolds at the right height and position for each task.
 
 ## Education
 
@@ -30,8 +30,8 @@ Journeyman carpenter with 4 years of experience who completes work to code witho
 
 ## Certifications
 
-- Construction Safety Card — Safety Training Council, 2024
-- Apprenticeship Completion Certificate — State Apprenticeship Council, 2025
+- Construction Safety Card — Safety Training Council, 2022
+- Apprenticeship Completion Certificate — State Apprenticeship Council, 2024
 
 ## Skills
 

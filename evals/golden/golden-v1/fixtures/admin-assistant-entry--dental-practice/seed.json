@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2025",
       "issuer": "Business Skills Academy",
       "name": "Office Administration Certificate"
     }
@@ -46,7 +46,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Schedules meetings and appointments for managers using Microsoft Excel trackers, reducing double bookings by 15 percent."
+          "text": "Schedules meetings and appointments for managers using a shared Microsoft Excel tracker, cutting double bookings by 15 percent."
         },
         {
           "display_order": 1,
@@ -57,7 +57,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Arranges travel and event details for staff through Microsoft Outlook, keeping invitations, bookings and confirmations in one place."
+          "text": "Arranges travel and event logistics for staff through Microsoft Outlook, sending confirmations and calendar invites ahead of each trip or meeting."
         },
         {
           "display_order": 2,
@@ -68,7 +68,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Processes expense reports and handles vendor coordination on missing receipts, cutting late submissions by 35 percent."
+          "text": "Processes staff expense reports and handles vendor coordination to resolve missing receipts, reducing report turnaround time by 35 percent."
         },
         {
           "display_order": 3,
@@ -79,7 +79,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Prepares meeting notes and applies document formatting so records stay consistent and easy to file."
+          "text": "Takes notes at team meetings and applies consistent document formatting so action items are clear and easy to file."
         }
       ],
       "company": "Stonebridge Community Trust",
@@ -99,7 +99,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Supports managers at Stonebridge Community Trust by keeping their calendars and meeting schedules organised and up to date."
+          "text": "Supports managers at Stonebridge Community Trust by keeping their schedules, meetings and appointments organized."
         },
         {
           "display_order": 1,
@@ -109,7 +109,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Handles travel and event arrangements for staff at Stonebridge Community Trust, from first bookings to final confirmations."
+          "text": "Handles travel and event arrangements for staff at Stonebridge Community Trust, from booking details to meeting setup."
         }
       ],
       "titles": [
@@ -194,7 +194,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Administrative support professional with about 1 year of experience handling routine office requests, with a colleague checking the work. Skills include visitor reception, Microsoft Excel and expense reporting."
+      "text": "Associate-level administrative support professional with about 1 year of experience handling routine office requests, with a colleague reviewing the work. Skilled in visitor reception, expense reporting and tracking data in Microsoft Excel."
     },
     {
       "display_order": 1,
@@ -205,7 +205,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Associate-level office assistant with about 1 year of experience covering visitor reception, expense reporting and day-to-day requests. Uses Microsoft Excel for tracking and works with a colleague who reviews completed tasks."
+      "text": "Administrative support professional with about 1 year of experience covering visitor reception and day-to-day office requests at an associate level. Handles expense reporting and spreadsheet updates in Microsoft Excel, with a colleague checking the work before it is finalized."
     }
   ],
   "tags": []

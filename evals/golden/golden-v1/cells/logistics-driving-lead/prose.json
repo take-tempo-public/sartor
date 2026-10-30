@@ -1,7 +1,7 @@
 {
   "cell": "logistics-driving-lead",
   "provenance": {
-    "attempts": 1,
+    "attempts": 2,
     "effort": "medium",
     "kind": "generated",
     "model": "claude-opus-5-5",
@@ -9,43 +9,44 @@
     "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
     "prompt_version": "golden-author-2",
     "request_ids": [
-      "req_011CgVk5tdrYdgd1j7c83rgc"
+      "req_011CgXPUAJ7goaDaSk7Ses7G",
+      "req_011CgXPWsHWiVYvwGErMhwxz"
     ],
     "requested_model": "claude-opus-5-5",
     "usage": {
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
-      "input_tokens": 5384,
-      "output_tokens": 3829
+      "input_tokens": 7314,
+      "output_tokens": 4581
     }
   },
   "schema": 1,
   "slots": {
-    "jd.distribution.about": "Beacon Distribution Group seeks a Transportation Supervisor to lead on-site driver operations in Kansas City, MO. The supervisor directs daily load movement, works closely with dispatch and keeps the fleet compliant with safety and logging requirements. Minimum requirements include extensive commercial driving experience and sound hazmat knowledge. Preferred candidates also hold dispatch certification.",
-    "jd.distribution.duties": "Responsibilities\n- Secure and check inbound and outbound loads before release.\n- Coordinate daily with dispatch on driver assignments and delivery timing.\n- Keep driver logs accurate and audit hours-of-service records.\n- Oversee pre-trip inspections and follow up on reported vehicle defects.\n- Train and coach drivers on safe operating practices.",
-    "jd.distribution.needs": "Minimum and preferred qualifications\n- 15 or more years of commercial driving or transportation experience.\n- Demonstrated skill in hours-of-service logging, pre-trip inspections and hazmat handling.\n- Experience with route planning and delivery scheduling.\n- Working knowledge of dispatch software.\n- Required certification: Dispatch Coordinator Certificate.\n- Preferred: supervisory experience leading a driver team.",
-    "r1.b1": "Coordinates with dispatch on load assignments and trailer coupling checks, cutting yard turnaround time by 20 percent.",
-    "r1.b2": "Trains new drivers in cargo documentation and reviews their paperwork until they complete it accurately on their own.",
-    "r1.b3": "Supervises load securement checks and hours-of-service logging, reducing load-related compliance findings by 30 percent.",
-    "r1.b4": "Reviews driver logs each week and pairs the findings with defensive driving coaching for drivers who need it.",
-    "r1.b5": "Enforces pre-trip inspections across the fleet, raising on-time customer deliveries by 45 percent.",
-    "r1.i1": "Leads the transportation team at Tidewater Haulers and works with dispatch daily to match drivers, trailers and loads.",
-    "r1.i2": "Supervises drivers at Tidewater Haulers and runs the process for reporting and tracking vehicle defects until repairs are closed.",
-    "r2.b1": "Used route planning to choose regional delivery routes, cutting empty miles by 25 percent.",
-    "r2.b2": "Reported vehicle and trailer defects before hazardous loads, applying hazmat handling rules to keep unsafe equipment off the road.",
-    "r2.b3": "Built driver schedules and routes from fuel and mileage logs, lowering fuel cost per mile by 45 percent.",
-    "r2.b4": "Performed pre-trip vehicle inspections, including trailer coupling checks before every departure.",
-    "r2.b5": "Coordinated with dispatch on pickups and drop-offs, keeping cargo documentation complete and cutting paperwork holds by 30 percent.",
-    "r2.i1": "Drove as a senior driver at Granite Ridge Transport and reported vehicle defects promptly so repairs were scheduled before the next run.",
-    "r2.i2": "Served as a senior driver at Granite Ridge Transport, training new drivers on safe operation and company procedures alongside regular routes.",
-    "r3.b1": "Kept accurate hours-of-service logging on every route, improving on-time customer deliveries by 10 percent.",
-    "r3.b2": "Planned routes around traffic and weather risks, applying defensive driving on every trip.",
-    "r3.b3": "Completed pre-trip inspections before each shift and reported defects early, reducing roadside breakdowns by 50 percent.",
-    "r3.b4": "Checked tires, brakes and lights during pre-trip vehicle inspections and used route planning to set departure times.",
-    "r3.b5": "Coordinated with dispatch on hazardous loads, following hazmat handling procedures and reducing loading delays by 30 percent.",
-    "r3.i1": "Operated Class A trucks for Stonebridge Logistics, completing a full pre-trip vehicle inspection before every departure.",
-    "r3.i2": "Drove Class A routes for Stonebridge Logistics and planned each trip to meet delivery windows and driving-hour limits.",
-    "summary.1": "Transportation supervisor with 15 years in truck driving and dispatch, leading a driver team and answering for its safety and delivery results. Brings hands-on skill in cargo documentation, trailer coupling and defensive driving, backed by a commercial driver licence and hazardous materials endorsement.",
-    "summary.2": "Lead-level truck driving and dispatch professional with 15 years of experience, currently supervising transportation operations at Tidewater Haulers. Holds drivers to clear standards in cargo documentation, trailer coupling and defensive driving and owns the team's results."
+    "jd.distribution.about": "Position summary\nBeacon Distribution Group seeks a Transportation Supervisor to oversee daily driver and fleet operations at its Kansas City distribution site. The Transportation Supervisor directs drivers, works closely with dispatch, and ensures that loads move safely, on schedule and in compliance with applicable regulations. Minimum requirements include commercial driving experience and prior supervisory responsibility. Experience with hazardous materials freight is preferred.",
+    "jd.distribution.duties": "Responsibilities\n- Supervise the securing and checking of loads before trucks leave the facility.\n- Coordinate with dispatch on driver assignments, departure times and route changes.\n- Review and maintain driver logs to confirm accurate hours-of-service records.\n- Confirm that drivers complete vehicle inspections and report defects promptly.\n- Train and coach drivers on safe operating practices and company procedures.\n- Resolve delivery issues with dispatch and customers as they arise.",
+    "jd.distribution.needs": "Minimum and preferred qualifications\n- Minimum: 15 or more years of commercial driving and transportation experience.\n- Minimum: Demonstrated hours-of-service logging, route planning and pre-trip inspections.\n- Minimum: Experience with hazmat handling and delivery scheduling.\n- Minimum: Working knowledge of dispatch software.\n- Required certification: Dispatch Coordinator Certificate.\n- Preferred: Experience with cargo documentation and fuel and mileage logs.",
+    "r1.b1": "Coordinates trailer swaps with dispatch and oversees trailer coupling checks in the yard, cutting departure delays by 20 percent.",
+    "r1.b2": "Trains new drivers on cargo documentation, walking each new hire through load paperwork before they run routes on their own.",
+    "r1.b3": "Leads load securement and inspection checks and reviews hours-of-service logging for each shift, reducing load-related exceptions by 30 percent.",
+    "r1.b4": "Maintains driver logs and reviews them against defensive driving practices, following up with drivers when entries show unsafe patterns.",
+    "r1.b5": "Enforces pre-trip inspections before each dispatch, raising on-time customer deliveries by 45 percent.",
+    "r1.i1": "Supervises transportation operations at Tidewater Haulers, working with dispatch each day to match loads with drivers and trailers.",
+    "r1.i2": "Oversees defect reporting at Tidewater Haulers, making sure drivers flag vehicle problems and repairs are completed before trucks return to service.",
+    "r2.b1": "Applied route planning to long-haul runs, reducing average delivery transit time by 25 percent.",
+    "r2.b2": "Reported vehicle defects promptly during hazmat handling assignments, keeping hazardous loads off the road until repairs were cleared.",
+    "r2.b3": "Built driver schedules and routes from fuel and mileage logs, cutting empty miles by 45 percent.",
+    "r2.b4": "Performed pre-trip vehicle inspections with a focus on trailer coupling, confirming fifth wheel and air line connections before departure.",
+    "r2.b5": "Coordinated with dispatch on load status and kept cargo documentation complete, lowering paperwork-related delivery holds by 30 percent.",
+    "r2.i1": "Drove senior routes for Granite Ridge Transport and reported vehicle defects to maintenance so trucks were repaired before their next assignment.",
+    "r2.i2": "Served as a senior driver at Granite Ridge Transport, training new drivers on safe operation, inspections and paperwork while running a full route schedule.",
+    "r3.b1": "Kept hours-of-service logging accurate on each shift, planning breaks around delivery windows and improving on-time customer deliveries by 10 percent.",
+    "r3.b2": "Planned routes around traffic, weather and road conditions, applying defensive driving to keep deliveries safe and steady.",
+    "r3.b3": "Completed pre-trip inspections and reported vehicle defects to maintenance, reducing roadside breakdowns by 50 percent.",
+    "r3.b4": "Checked brakes, tires, lights and fluids during pre-trip vehicle inspections and used route planning to set departure times.",
+    "r3.b5": "Coordinated with dispatch on hazmat handling requirements for each load, cutting delays at receiving docks by 30 percent.",
+    "r3.i1": "Operated Class A tractor-trailers for Stonebridge Logistics, completing pre-trip vehicle inspections before each run.",
+    "r3.i2": "Drove freight routes for Stonebridge Logistics, planning each route around delivery windows, road restrictions and safe stopping points.",
+    "summary.1": "Transportation supervisor with 15 years in commercial driving and dispatch, leading a driver team and answering for its safety, on-time delivery and compliance results. Brings hands-on strength in cargo documentation, trailer coupling, defensive driving, route planning and hazmat handling, backed by a Commercial Driver Licence with Hazardous Materials Endorsement.",
+    "summary.2": "Lead-level truck driving and dispatch professional with 15 years of experience, now supervising transportation operations and owning the results of the driver program. Trains drivers in defensive driving, trailer coupling and cargo documentation, and holds the Dispatch Coordinator Certificate and Driver Safety Certificate."
   }
 }

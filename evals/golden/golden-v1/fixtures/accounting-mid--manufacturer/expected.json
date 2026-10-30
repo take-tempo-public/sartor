@@ -24,8 +24,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Owning a recurring process from request to completion."
       },
-      "edit_replacement": "posting entries and reviewing ledger balances before statements are prepared., owning a recurring process from request to completion",
-      "edit_target_substring": "posting entries and reviewing ledger balances before statements are prepared.",
+      "edit_replacement": "posting accruals and reviewing ledger balances before statements go to, owning a recurring process from request to completion",
+      "edit_target_substring": "posting accruals and reviewing ledger balances before statements go to",
       "expected_iteration_themes": {
         "experience_probes": [
           "Journal entries exposure not yet covered by prior clarifications"

@@ -5,38 +5,38 @@
     "effort": "medium",
     "kind": "generated",
     "model": "claude-opus-5-5",
-    "profile_sha256": "sha256:fccdf3603d9c807348745956e4fc14bdd141ad59cb437cdc344ef4315a38c6ef",
+    "profile_sha256": "sha256:acb297cc9ba8e02c47946dbf0d681c8628aefcebe17b4f3e2471a7265f18dcf8",
     "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
     "prompt_version": "golden-author-2",
     "request_ids": [
-      "req_011CgVjo2gLMMcd7mJPAMFht"
+      "req_011CgXPQutchSEvS2Y5qqWMK"
     ],
     "requested_model": "claude-opus-5-5",
     "usage": {
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
       "input_tokens": 3821,
-      "output_tokens": 2658
+      "output_tokens": 2868
     }
   },
   "schema": 1,
   "slots": {
-    "jd.residential-hvac.about": "Aspen Ridge Mechanical is an owner-run residential heating and cooling company in Salt Lake City. We are hiring an HVAC Technician to work on site in customers' homes, servicing, repairing and installing furnaces, air conditioners and heat pumps. You will deal directly with homeowners and work alongside our small team, and we expect careful, clean work done to code.",
-    "jd.residential-hvac.duties": "What the job involves\n- Visit customers' homes to estimate jobs and explain the work and cost in plain terms\n- Diagnose heating and cooling faults on furnaces, air conditioners and heat pumps\n- Test systems for refrigerant leaks and repair them to code\n- Install and service equipment, then check that it runs as it should\n- Keep clear records of each visit and the work done",
-    "jd.residential-hvac.needs": "What you need\n- 4 or more years of experience as an HVAC technician\n- A current HVAC Technician Licence is required; a Controls Technician Certificate is preferred\n- Hands-on skill in heat pump service, system diagnostics and leak testing\n- Experience with building automation and thermostat installation\n- Brazing and soldering on copper lines and fittings",
-    "r1.b1": "Keep work orders complete and up to date for furnace repair calls, cutting repeat visits by 45 percent.",
-    "r1.b2": "Carry out preventive maintenance visits, using brazing and soldering to repair lines and fittings before they fail.",
-    "r1.b3": "Install new heating and cooling equipment sized with load calculations, reducing callbacks after installation by 30 percent.",
-    "r1.b4": "Estimate jobs for customers on site, including thermostat installation, and explain the scope and cost before work begins.",
-    "r1.i1": "Handles preventive maintenance visits on residential heating and cooling systems for Evergreen Climate Services customers.",
-    "r1.i2": "Tests heating and cooling systems for refrigerant leaks and repairs them to code for Evergreen Climate Services customers.",
-    "r2.b1": "Diagnosed heating and cooling faults with leak testing, cutting the time to find refrigerant leaks by 40 percent.",
-    "r2.b2": "Supported leak checks on service calls and used electrical testing to rule out wiring and control faults.",
-    "r2.b3": "Kept work orders for building automation service calls accurate, reducing missing job details by 45 percent.",
-    "r2.b4": "Assisted on preventive maintenance visits, cleaning, inspecting and adjusting furnaces and air conditioners under supervision.",
-    "r2.i1": "Tested heating and cooling systems for leaks while training under licensed technicians at Tillman Mechanical.",
-    "r2.i2": "Kept work orders and service records up to date while learning the trade as an apprentice at Tillman Mechanical.",
-    "summary.1": "HVAC technician with about 4 years of experience who completes service work to code without supervision. Skilled in furnace repair, electrical testing and building automation, and holds an HVAC Technician Licence and a Refrigerant Compliance Certificate.",
-    "summary.2": "Journeyman-level heating and cooling service technician with about 4 years of hands-on experience, working independently and to code. Brings furnace repair, electrical testing and building automation skills, backed by a certificate in heating and cooling technology."
+    "jd.residential-hvac.about": "About us and the job\nAspen Ridge Mechanical is an owner-run heating and cooling company serving homes in and around Salt Lake City. We are looking for an HVAC technician to join our field crew. The work is on site in customers' homes, servicing, repairing and installing furnaces, air conditioners and heat pumps. We keep our crew small, treat customers fairly and stand behind our work.",
+    "jd.residential-hvac.duties": "What the job involves\n- Visit homes to diagnose heating and cooling faults and carry out repairs\n- Estimate jobs for customers and explain costs and options in plain terms\n- Test systems for refrigerant leaks and repair them to code\n- Service furnaces, air conditioners and heat pumps on maintenance visits\n- Keep clear work orders and records for each job",
+    "jd.residential-hvac.needs": "What you need\n- 4 or more years of experience as an HVAC technician\n- A current HVAC Technician Licence (required)\n- Hands-on skill in heat pump service, system diagnostics and leak testing\n- Experience with building automation and thermostat installation\n- Brazing and soldering on copper line sets and fittings\n- A Controls Technician Certificate is preferred",
+    "r1.b1": "Keep work orders complete and current on every furnace repair call, cutting billing corrections by 45 percent.",
+    "r1.b2": "Carry out preventive maintenance visits on heating and cooling systems, using brazing and soldering to repair line sets and fittings found during inspection.",
+    "r1.b3": "Install furnaces and air conditioners sized from load calculations, reducing callbacks on new installations by 30 percent.",
+    "r1.b4": "Prepare job estimates for homeowners covering equipment, labour and thermostat installation, and explain each option before work begins.",
+    "r1.i1": "Handles preventive maintenance visits for Evergreen Climate Services customers, inspecting, cleaning and adjusting heating and cooling equipment.",
+    "r1.i2": "Tests heating and cooling systems for refrigerant leaks at Evergreen Climate Services and repairs them before returning equipment to service.",
+    "r2.b1": "Diagnosed heating and cooling faults alongside senior technicians, using leak testing to locate refrigerant losses and cutting repeat visits by 40 percent.",
+    "r2.b2": "Ran electrical testing on compressors, motors and controls while checking systems for leaks, confirming safe operation before handover.",
+    "r2.b3": "Kept work orders up to date with readings from building automation systems, reducing missing service records by 45 percent.",
+    "r2.b4": "Assisted on preventive maintenance visits, checking filters, belts, burners and drains and recording findings for the lead technician.",
+    "r2.i1": "Tested heating and cooling systems for refrigerant leaks at Tillman Mechanical while training under licensed technicians.",
+    "r2.i2": "Kept accurate work orders for service calls at Tillman Mechanical while learning heating and cooling repair as an apprentice.",
+    "summary.1": "Heating and cooling service technician with 4 years of experience completing work to code without supervision. Skilled in furnace repair, electrical testing and building automation, and holds an HVAC Technician Licence.",
+    "summary.2": "Licensed HVAC technician with about 4 years of field experience, working independently and to code on service and installation calls. Brings hands-on skill in furnace repair, electrical testing and building automation, backed by a Refrigerant Compliance Certificate."
   }
 }

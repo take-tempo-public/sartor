@@ -13,6 +13,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed: entry-tier credentials follow the career start, and a posting can no longer prefer a credential the facts do not name; 26 cells regenerated (`feat/eval-dataset-v1-credentials`, item 194, findings 1 and 2)
+
+**The only paid calls were 29 author requests to `claude-opus-5-5` at effort `medium` (26 cells, three of them with one rewrite; $1.88 logged; the call log
+reads $13.09 of the $14.00 total the owner approved for this work), and no dependency was added.** `evals/golden/golden-v1/` is still `draft`; scopes 3 to 6 of item 194 stay open.
+
+- **Entry-tier credentials (`evals/golden_set.py`, `build_profile`).** An entry-tier credential has no role of its own, so it was uncapped and could be
+  dated after the career began (23 credentials in 22 cells; a teaching licence dated 2026 against a January 2025 role, while the posting called it a
+  condition of employment). Its cap is now the year of the earliest role. Tests first; they failed on the old builder. `check` found 23 stale profiles,
+  one more than predicted (a mid-tier year moved by the sorted hand-out); every difference was a certification year.
+- **A posting that prefers a credential the facts do not name.** New `check_jd_credential_status`, run by `check_prose` (so the suite check and CI refuse
+  a stale cell) and by `author_cell` (inside the existing one-rewrite budget): a JD sentence naming a credential and saying "prefer" is refused when no
+  `needs` brief asks for a preferred credential. It named exactly 4 cells (`accounting-senior`, `carpenter-foreman-lead`, `construction-pm-senior`,
+  `logistics-driving-lead`). A broader "no credential words in the about or duties paragraphs" rule was measured and rejected (35 cells, most consistent
+  with `needs`; it needed a brief change, hence all 96 cells). The builder's required and preferred phrases are shared constants; the briefs are
+  byte-identical.
+- **26 cells regenerated** (the 23 plus the 4; one overlap), none rejected; 36 pair fixtures re-derived, and the authored `transferable` term of one pair
+  re-picked because the new prose no longer contained it. `check` reports `OK (96 cells)`; `prompt_version` is still `golden-author-2`.
+- **Accepted for v1:** the employer pool (59 invented names for 216 roles). The owner's reason: invented names in a backend eval dataset, no effect on any
+  score. A better pool belongs in a `golden-v2`.
+- **Limits, stated:** the status check is a word list and misses a paraphrase; it covers "preferred with nothing to prefer", not a credential called
+  required twice; the entry cap is checked by the gate's tests, not before a paid request. Hand-read: three cells whole and every credential sentence and
+  year of the 26. Dossier: `docs/dev/blast-radius/eval-dataset-v1-credentials.md`.
+
 ### Fixed: three realism faults in the golden set's credentials, 40 cells regenerated, and a first stratified hand-read (`feat/eval-dataset-v1-finish`, item 194, scopes 1 and 2)
 
 **The only paid calls were 42 author requests to `claude-opus-5-5` at effort `medium` ($3.33 logged; the call log reads $11.21 of the $13.00 the owner

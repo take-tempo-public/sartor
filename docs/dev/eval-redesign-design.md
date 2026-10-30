@@ -777,7 +777,9 @@ third affected 37 cells and was fixed afterwards on `feat/eval-dataset-v1-finish
 two more faults in the same function (credential years out of tier order, and a credential dated after the role that needs it)
 and 40 cells were regenerated for $3.33 more; a first stratified hand-read (scope 2) left three realism findings with the owner
 (entry-tier credentials dated after the career began, a posting contradicting itself about a credential, and a 59-name employer
-pool). Still to do, all in item 194: the calibration run, final tier sizes, retiring `evals/fixtures/synthetic/`, and the freeze.
+pool). The owner answered on 2026-10-29: the first two were fixed on `feat/eval-dataset-v1-credentials` (26 cells regenerated for
+$1.88, with a fail-closed check for the second), and the employer pool is accepted for v1 (a better pool belongs in a `golden-v2`). Still
+to do, all in item 194: the calibration run, final tier sizes, retiring `evals/fixtures/synthetic/`, and the freeze.
 
 ### 6.5 Proposal for the owner: the USAJOBS exploration fetch needs a charter decision (2026-10-22)
 

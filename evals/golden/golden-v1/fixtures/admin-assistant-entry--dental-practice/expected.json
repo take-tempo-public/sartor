@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Handling routine requests with a colleague checking the work."
       },
-      "edit_replacement": "Arranges travel and event details for staff through Microsoft Outlook, handling routine requests with a colleague checking the work",
-      "edit_target_substring": "Arranges travel and event details for staff through Microsoft Outlook",
+      "edit_replacement": "sending confirmations and calendar invites ahead of each trip or, handling routine requests with a colleague checking the work",
+      "edit_target_substring": "sending confirmations and calendar invites ahead of each trip or",
       "expected_iteration_themes": {
         "experience_probes": [
           "Calendar management exposure not yet covered by prior clarifications"

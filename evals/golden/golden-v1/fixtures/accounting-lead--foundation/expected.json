@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Managing a team and answering for the results of the function."
       },
-      "edit_replacement": "Reconciles bank accounts each month and ties the balances to, managing a team and answering for the results of the function",
-      "edit_target_substring": "Reconciles bank accounts each month and ties the balances to",
+      "edit_replacement": "Reconciles bank accounts each month and ties balances to financial, managing a team and answering for the results of the function",
+      "edit_target_substring": "Reconciles bank accounts each month and ties balances to financial",
       "expected_iteration_themes": {
         "experience_probes": [
           "Account reconciliation exposure not yet covered by prior clarifications"

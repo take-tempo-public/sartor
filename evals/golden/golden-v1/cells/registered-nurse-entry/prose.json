@@ -5,32 +5,32 @@
     "effort": "medium",
     "kind": "generated",
     "model": "claude-opus-5-5",
-    "profile_sha256": "sha256:2f03cf8f998cd58106a43bcf53a8daf3e3e6e6bf944873b155068875a41b69fb",
+    "profile_sha256": "sha256:feca75bc40fe8400f14e7e2029d29a99c28ff32baceb9e486ec5a5ef56359f3c",
     "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
     "prompt_version": "golden-author-2",
     "request_ids": [
-      "req_011CgVjE9PjVXPoVTYMTAaUQ"
+      "req_011CgXPanxfzpbVVZ1NWx8wU"
     ],
     "requested_model": "claude-opus-5-5",
     "usage": {
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
       "input_tokens": 2944,
-      "output_tokens": 1822
+      "output_tokens": 2136
     }
   },
   "schema": 1,
   "slots": {
-    "jd.community-hospital.about": "Summary\nPinebrook Medical Center is a community hospital in Toledo, OH. Our mission is to provide safe, compassionate care close to home for every patient who comes through our doors. We are seeking a Graduate Registered Nurse to join our on-site nursing team and grow with experienced colleagues. A current registered nurse licence and a Basic Life Support Card are required for this position.",
-    "jd.community-hospital.duties": "Duties\n- Assess patients on admission and throughout each shift, recording findings in the patient record\n- Coordinate with physicians and the wider care team on treatment plans and changes in patient condition\n- Give medications as ordered, checking each dose, route and time before administration\n- Monitor vital signs and escalate concerns promptly to the charge nurse or physician\n- Take part in bedside handoff so incoming staff have a clear picture of each patient\n- Teach patients and families about their care, medications and discharge instructions",
-    "jd.community-hospital.needs": "Licensure and qualifications\n- 2 or more years of experience as a registered nurse\n- Patient assessment and vital signs monitoring skills in a hospital or clinic setting\n- Working knowledge of care planning and triage\n- Accurate clinical documentation and consistent infection control practice\n- Current registered nurse licence and Basic Life Support Card required; Advanced Cardiac Life Support Card preferred",
-    "r1.b1": "Charts care planning notes in the clinic record after each patient visit, reducing documentation gaps by 15 percent.",
-    "r1.b2": "Reports vital signs monitoring trends during shift handoff so incoming nurses can act quickly on changes in patient condition.",
-    "r1.b3": "Completes patient assessment before giving medications, reducing medication timing errors by 20 percent.",
-    "r1.b4": "Coordinates with physicians on discharge planning, confirming orders and follow-up instructions before patients leave the clinic.",
-    "r1.i1": "Provides direct patient care at Harborview Community Clinic, keeping charting in the patient record accurate and current after each visit.",
-    "r1.i2": "Supports patients at Harborview Community Clinic by giving medications as ordered and checking each dose against the patient record.",
-    "summary.1": "Entry-level registered nurse with about 2 years of experience providing patient care under close supervision on a defined share of the unit's work. Skilled in bedside handoff, vital signs monitoring and care planning, with a B.S.N. from Lakeshore University.",
-    "summary.2": "Graduate registered nurse with about 2 years of experience working alongside a supervising nurse on a small portion of daily patient care. Contributes through bedside handoff, vital signs monitoring and care planning, and holds a current Basic Life Support Card."
+    "jd.community-hospital.about": "Summary\nPinebrook Medical Center is a community hospital committed to safe, compassionate care for every patient and family we serve. We are seeking a Graduate Registered Nurse to join our on-site nursing team in Toledo, OH. Candidates must hold a current Registered Nurse Licence and a Basic Life Support Card.",
+    "jd.community-hospital.duties": "Duties\n- Assess patients on admission and throughout each shift, and report changes in condition promptly\n- Coordinate with physicians and the wider care team to carry out and update plans of care\n- Give medications safely and accurately according to orders and hospital policy\n- Monitor patient responses to treatment and record findings in the medical record\n- Teach patients and families about their condition, medications and care after discharge\n- Take part in bedside handoff to keep care consistent between shifts",
+    "jd.community-hospital.needs": "Licensure and qualifications\n- Basic Life Support Card and an active Registered Nurse Licence are required; Advanced Cardiac Life Support Card is preferred\n- 2 or more years of registered nursing experience\n- Patient assessment and vital signs monitoring skills across varied patient needs\n- Care planning and triage in a busy hospital setting\n- Clinical documentation that is accurate, timely and complete\n- Infection control practices in line with hospital policy",
+    "r1.b1": "Charts care planning updates in the patient record after each visit, reducing documentation errors flagged in chart reviews by 15 percent.",
+    "r1.b2": "Shares vital signs monitoring results and changes in patient condition clearly at each shift handoff so the incoming nurse can continue care without gaps.",
+    "r1.b3": "Gives medications after a patient assessment to confirm readiness and check for side effects, lowering medication-related follow-up calls by 20 percent.",
+    "r1.b4": "Coordinates with physicians on discharge planning, confirming orders, follow-up needs and patient instructions before each patient leaves the clinic.",
+    "r1.i1": "Graduate Registered Nurse at Harborview Community Clinic, responsible for accurate and timely charting in the patient record for each clinic visit.",
+    "r1.i2": "Graduate Registered Nurse at Harborview Community Clinic, giving medications safely and checking patient responses under the guidance of senior nursing staff.",
+    "summary.1": "Entry-level graduate registered nurse handling a small share of patient care at a community clinic with a supervisor close by. Contributes bedside handoff, vital signs monitoring and care planning, and holds a Registered Nurse Licence and a Basic Life Support Card.",
+    "summary.2": "Graduate registered nurse with a B.S.N. in Nursing from Lakeshore University, working on a defined part of patient care with a supervisor nearby. Applies vital signs monitoring, care planning and bedside handoff to keep care safe and consistent between shifts."
   }
 }

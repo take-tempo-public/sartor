@@ -24,8 +24,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Carrying a full caseload or class without close supervision."
       },
-      "edit_replacement": "Uses triage findings to teach patients and families which symptoms, carrying a full caseload or class without close supervision",
-      "edit_target_substring": "Uses triage findings to teach patients and families which symptoms",
+      "edit_replacement": "Teach patients and families about warning signs and follow-up care, carrying a full caseload or class without close supervision",
+      "edit_target_substring": "Teach patients and families about warning signs and follow-up care",
       "expected_iteration_themes": {
         "experience_probes": [
           "Care planning exposure not yet covered by prior clarifications"

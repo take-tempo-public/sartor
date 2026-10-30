@@ -5,32 +5,32 @@
     "effort": "medium",
     "kind": "generated",
     "model": "claude-opus-5-5",
-    "profile_sha256": "sha256:3570ef2541fc04131607246ccd52cb6f8eae814abdbfbb4f72d79159a51e8950",
+    "profile_sha256": "sha256:6551d5ff5b75244b5a44cfa0b6ec8c36407da62ddf7b1ffe636c42c896d3ca7c",
     "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
     "prompt_version": "golden-author-2",
     "request_ids": [
-      "req_011CgVMDhXAvY3JvbCgw1124"
+      "req_011CgXNxvijfog3kqK6mLU7Q"
     ],
     "requested_model": "claude-opus-5-5",
     "usage": {
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
       "input_tokens": 2832,
-      "output_tokens": 1994
+      "output_tokens": 2067
     }
   },
   "schema": 1,
   "slots": {
-    "jd.tax-firm.about": "About us and the job\nRedwood Tax and Bookkeeping is a small, owner-run accounting firm in Sacramento, CA. We look after the books and tax work for local businesses and families, and we know our clients by name. We are hiring a Staff Accountant to join our team in the office. This job is on site, and you will work closely with the owners and the rest of our small staff every day.",
-    "jd.tax-firm.duties": "What the job involves\n- Prepare monthly financial statements for our business clients\n- Review vendor invoices for accuracy, coding and approval before payment\n- Complete bank reconciliations and follow up on any differences\n- Post adjustments and keep client ledgers up to date\n- Help gather records and answer client questions during busy periods\n- Work with the owners to make sure files are complete and ready for review",
-    "jd.tax-firm.needs": "What you need\n- 1 or more years of experience in an accounting or bookkeeping role\n- Working knowledge of journal entries, month-end close and budget variance analysis\n- Hands-on experience with fixed asset tracking and sales tax filing\n- Familiarity with SAP\n- Bookkeeping Certificate (required)\n- Certified Public Accountant Licence (preferred)",
-    "r1.b1": "Prepares payroll accounting records and supporting schedules for audit preparation, reducing auditor follow-up requests by 10 percent.",
-    "r1.b2": "Reconciles bank accounts and ties fixed asset tracking records to the general ledger so differences are cleared before close.",
-    "r1.b3": "Builds Microsoft Excel checklists and reconciliation templates for month-end close, cutting the time needed to close the books by 20 percent.",
-    "r1.b4": "Records journal entries for accruals and adjustments and drafts financial statements for senior review.",
-    "r1.i1": "Prepares monthly financial statements at Northfield Group as a staff accountant, working from the general ledger with senior review.",
-    "r1.i2": "Reviews vendor invoices at Northfield Group for accuracy and proper approval before they are entered and paid.",
-    "summary.1": "Associate-level accounting professional with about 1 year of experience as a staff accountant, handling routine requests with a colleague checking the work. Skilled in Microsoft Excel, journal entries and payroll accounting, with a B.S. in Accounting and a Bookkeeping Certificate.",
-    "summary.2": "Staff accountant with about 1 year of experience handling routine accounting requests, with each task checked by a colleague before it is finalized. Uses Microsoft Excel daily to support journal entries, payroll accounting and account reconciliation."
+    "jd.tax-firm.about": "About us and the job\nRedwood Tax and Bookkeeping is a small, owner-run accounting firm in Sacramento, California. We keep the books, prepare taxes and help local businesses stay on top of their finances. We are hiring a Staff Accountant to join our team. The job is on site in our office, and you will work closely with the owners and our small staff on client accounts.",
+    "jd.tax-firm.duties": "What the job involves\n- Prepare monthly financial statements for our small business clients\n- Review vendor invoices for accuracy, coding and approval before payment\n- Reconcile client bank and credit card accounts and clear any differences\n- Post journal entries and adjustments as needed\n- Help with month-end close and keep client files organised",
+    "jd.tax-firm.needs": "What you need\n- 1 or more years of experience in accounting or bookkeeping\n- Working knowledge of journal entries, month-end close and budget variance analysis\n- Experience with fixed asset tracking and sales tax filing\n- Comfort working in SAP\n- Bookkeeping Certificate (required)\n- Certified Public Accountant Licence (preferred)",
+    "r1.b1": "Supports audit preparation by organising payroll accounting records and tying them to the general ledger, cutting auditor follow-up requests by 10 percent.",
+    "r1.b2": "Reconciles bank accounts each month and matches asset purchases against fixed asset tracking schedules so balances agree before review.",
+    "r1.b3": "Builds Microsoft Excel checklists and tie-out workbooks for month-end close, reducing the time needed to finish closing entries by 20 percent.",
+    "r1.b4": "Prepares draft financial statements from posted journal entries and supporting schedules for review by a colleague.",
+    "r1.i1": "Prepares monthly financial statements and supporting schedules as a Staff Accountant at Northfield Group.",
+    "r1.i2": "Reviews vendor invoices for accuracy and approval before payment as a Staff Accountant at Northfield Group.",
+    "summary.1": "Associate-level accountant with about 1 year of experience handling routine accounting requests, with a colleague checking the work. Uses Microsoft Excel for schedules and reconciliations and records journal entries and payroll accounting entries with care.",
+    "summary.2": "Associate-level accountant with a B.S. in Accounting and about 1 year in a staff accountant role, handling routine requests while a colleague reviews the work. Works daily in Microsoft Excel, prepares journal entries, and supports payroll accounting and month-end close."
   }
 }

@@ -24,8 +24,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Guiding colleagues and handling the hardest cases."
       },
-      "edit_replacement": "assigning beds and leading discharge planning so patients leave with, guiding colleagues and handling the hardest cases",
-      "edit_target_substring": "assigning beds and leading discharge planning so patients leave with",
+      "edit_replacement": "assigning staff and starting discharge planning early so patients leave, guiding colleagues and handling the hardest cases",
+      "edit_target_substring": "assigning staff and starting discharge planning early so patients leave",
       "expected_iteration_themes": {
         "experience_probes": [
           "Infection control exposure not yet covered by prior clarifications"

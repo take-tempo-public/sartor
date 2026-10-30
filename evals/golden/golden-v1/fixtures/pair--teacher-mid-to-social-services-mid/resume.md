@@ -4,25 +4,25 @@ casey.chen@example.com | (555) 010-5420 | linkedin.com/in/example-casey-teacher-
 
 ## Summary
 
-Elementary classroom teacher with about 4 years of experience who runs a full class independently, from lesson design to family contact. Uses Nearpod, behavior supports and math manipulatives to keep instruction active and students on task.
+Elementary classroom teacher with about 4 years of experience running a full class without close supervision. Uses Nearpod, behavior supports and math manipulatives to keep lessons active and students on track.
 
 ## Experience
 
 ### Classroom Teacher — Hillcrest Elementary School
 *January 2025 – present*
 
-- Adapts lessons for different learners with Nearpod activities set at several levels of difficulty, raising average quiz scores by 15 percent.
-- Tracks student progress through regular checks of classwork and reading and shares the results through parent communication so families know where to help at home.
-- Builds classroom routines around quick formative assessment checks, cutting time lost during transitions by 40 percent.
-- Plans daily math lessons with math manipulatives so students model each problem with objects before moving to written work.
+- Adapts reading and math tasks for different learners through Nearpod lessons with tiered questions, raising the share of students completing assigned work by 15 percent.
+- Tracks student progress through regular checks and uses parent communication to share findings so families know where each child stands.
+- Builds consistent classroom routines around formative assessment, using quick checks to adjust pacing and cutting time lost to transitions by 40 percent.
+- Plans daily lessons that use math manipulatives to move students from concrete models to written problems.
 
 ### Associate Teacher — Willowbrook Elementary School
 *August 2022 – January 2025*
 
-- Led small-group reading using differentiated instruction, raising the share of students reading at grade level by 40 percent.
-- Planned with grade-level colleagues to apply the same behavior supports across classrooms so students met consistent expectations.
-- Prepared families for parent conferences through ClassDojo updates, increasing conference attendance by 15 percent.
-- Applied classroom management routines that freed time to adapt assignments for different learners during independent work.
+- Led small-group reading using differentiated instruction, grouping students by need and raising the share reading at grade level by 40 percent.
+- Collaborated with grade-level colleagues in team planning to design behavior supports applied consistently across classrooms.
+- Prepared for parent conferences with ClassDojo updates on progress and behavior, increasing conference attendance by 15 percent.
+- Adapted work for different learners while applying classroom management strategies that kept the whole class on task during small-group instruction.
 
 ## Education
 
@@ -30,8 +30,8 @@ Elementary classroom teacher with about 4 years of experience who runs a full cl
 
 ## Certifications
 
-- State Teaching Licence — State Department of Education, 2023
-- Reading Specialist Endorsement — State Department of Education, 2025
+- State Teaching Licence — State Department of Education, 2022
+- Reading Specialist Endorsement — State Department of Education, 2023
 
 ## Skills
 

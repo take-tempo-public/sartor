@@ -72,7 +72,8 @@ def test_a_cells_credentials_are_asked_dated_and_ordered_like_a_real_career(
 
     The posting requires the highest credential held; years do not fall as the tier rises; and a mid-or-higher
     credential is dated no later than the earliest role titled for its tier (a Journeyman licence after the
-    Journeyman role began is a fault no check of the prose can see). An entry-tier credential is not bound by a role.
+    Journeyman role began is a fault no check of the prose can see). An entry-tier credential has no role of its
+    own, so it is dated no later than the earliest role of any title (the career's start).
     """
     facts = _facts(profession)
     tier_of = {c["name"]: gs.LEVELS.index(c["level"]) for c in facts.get("certifications", [])}
@@ -87,10 +88,10 @@ def test_a_cells_credentials_are_asked_dated_and_ordered_like_a_real_career(
         roles = [r for s in profile["sections"] if s["kind"] == "experience" for r in s["roles"]]
         for cert in certs:
             tier = tier_of[cert["name"]]
-            if tier == 0:
-                continue
             starts = [
-                int(r["start"][:4]) for r in roles if r["title"] == facts["titles"][gs.LEVELS[tier]]
+                int(r["start"][:4])
+                for r in roles
+                if tier == 0 or r["title"] == facts["titles"][gs.LEVELS[tier]]
             ]
             if starts:
                 assert int(cert["year"]) <= min(starts), (where, cert["name"], cert["year"], starts)

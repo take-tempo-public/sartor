@@ -4,17 +4,17 @@ jordan.reyes@example.com | (555) 010-8697 | linkedin.com/in/example-jordan-socia
 
 ## Summary
 
-Entry-level social services caseworker with about 1 year of experience supporting housing authority clients under close supervision. Brings client advocacy, needs assessments and record keeping in Microsoft Access to a small, supervised share of the caseload.
+Entry-level social services case aide with about 1 year of experience supporting tenants at a housing authority under close supervision. Brings client advocacy, needs assessments and case record keeping in Microsoft Access, along with a B.S.W. in Social Work.
 
 ## Experience
 
 ### Case Aide — Stonegate Housing Authority
 *July 2025 – present*
 
-- Coordinates with schools and clinics through referral coordination for resident families, raising the share of completed referrals by 55 percent.
-- Conducts intake interviews and needs assessments with residents and drafts court reports that summarize household circumstances for supervisor review.
-- Maintains case records in Microsoft Access, reducing the time needed to locate and update client files by 30 percent.
-- Refers families to housing and food programs and applies crisis intervention when households face an urgent risk of losing shelter.
+- Coordinates with local schools and clinics through referral coordination, raising the share of completed tenant referrals by 55 percent.
+- Conducts intake interviews and needs assessments with tenants and drafts court reports from the findings for supervisor review.
+- Maintains tenant case records in Microsoft Access, cutting the time spent locating client files by 30 percent.
+- Refers families to housing and food programs and applies crisis intervention when tenants face an urgent loss of shelter or food.
 
 ## Education
 
@@ -22,7 +22,7 @@ Entry-level social services caseworker with about 1 year of experience supportin
 
 ## Certifications
 
-- Mandated Reporter Certificate — State Child Welfare Board, 2026
+- Mandated Reporter Certificate — State Child Welfare Board, 2025
 
 ## Skills
 

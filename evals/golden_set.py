@@ -290,8 +290,9 @@ def _certification_problems(profile: dict[str, Any]) -> list[str]:
 
     The items are listed lowest tier first, so their years must not fall down the list (a Master licence dated
     before the Journeyman licence), and every posting must ask for the last one, the highest held. The third
-    fault, a credential dated after the role that needs it, takes the facts' tier map and is checked by
-    ``tests/test_golden_facts.py``, not here.
+    fault, a credential dated after the role that needs it (for an entry-tier credential, after the career's
+    first role), takes the facts' tier map and is checked by ``tests/test_golden_facts.py``, not here: a
+    profile carries names, issuers and years, not which credential is entry-tier.
     """
     items = [
         c
@@ -392,6 +393,40 @@ def validate_profile(profile: dict[str, Any]) -> list[str]:
 # --------------------------------------------------------------------------------------------------
 
 
+#: The builder's own words for the two certification asks in a posting's `needs` brief. The status check
+#: below reads the preferred one back out of the brief, so the builder and the check share one spelling.
+CERT_REQUIRED_PHRASE = "as a required licence or certification."
+CERT_PREFERRED_PHRASE = "as preferred."
+_CREDENTIAL_WORD = re.compile(r"certif|licen[cs]|credential|endorsement|accredit", re.IGNORECASE)
+
+
+def check_jd_credential_status(profile: dict[str, Any], slot_id: str, text: str) -> list[str]:
+    """A posting may not call a credential preferred when the facts name none above the cell's tier.
+
+    The builder asks `needs` to require the highest credential held and, only when one sits above the
+    cell's tier, to name it as preferred (`CERT_PREFERRED_PHRASE` in the brief). A model improvising a
+    sentence elsewhere ("Preferred candidates also hold a safety certification") then contradicts the
+    required credential, and nothing in a slot alone shows it (item 194 finding 2, four committed cells).
+
+    A word list, not a reading: it finds a sentence with a credential word and "prefer" and cannot tell
+    which credential is meant, and it misses a paraphrase ("ideally", "a plus"). Only JD slots are checked.
+    """
+    if not slot_id.startswith("jd."):
+        return []
+    if any(
+        CERT_PREFERRED_PHRASE in str(slot.get("brief", ""))
+        for sid, slot in profile["slots"].items()
+        if sid.endswith(".needs")
+    ):
+        return []
+    return [
+        f"{slot_id}: calls a credential preferred, but the facts name no credential above this tier "
+        f"to prefer: {sentence.strip()!r}"
+        for sentence in re.split(r"(?<=[.!?])\s+|\n", text)
+        if _CREDENTIAL_WORD.search(sentence) and re.search("prefer", sentence, re.IGNORECASE)
+    ]
+
+
 def check_slot_text(slot_id: str, slot: dict[str, Any], text: str, traps: list[str]) -> list[str]:
     """Problems with one slot's text. The rules a generator's output must meet before it is kept."""
     problems: list[str] = []
@@ -442,6 +477,9 @@ def check_prose(profile: dict[str, Any], prose: dict[str, Any]) -> list[str]:
         # are not applied to JD text either.
         slot_traps = [] if converted or slot["kind"] == "jd" else traps
         problems += check_slot_text(slot_id, slot, texts[slot_id], slot_traps)
+        # A converted persona's posting is real text, not held to the builder's facts.
+        if not converted:
+            problems += check_jd_credential_status(profile, slot_id, texts[slot_id])
     return problems
 
 
@@ -1847,8 +1885,9 @@ def build_profile(
     first_year, last_year = int(oldest_year), int(ASOF[:4])
     # A credential of tier t is held before the candidate's earliest role titled for tier t or above (the
     # Journeyman licence before the Journeyman role). `role_cap` is that role's start year, which does not
-    # fall as the tier rises. An entry-tier credential has no role of its own, so it takes the lowest cap
-    # among the higher credentials held; a cell holding only entry-tier credentials is capped by nothing.
+    # fall as the tier rises. An entry-tier credential has no role of its own, so it is held before the
+    # career begins: its cap is `first_year`, the start of the earliest role of any title (a teaching licence
+    # the posting calls a condition of employment is not dated after the first teaching job).
     role_start = [
         (LEVELS.index(t), int(r["start"][:4])) for t, r in zip(role_tiers, roles, strict=True)
     ]
@@ -1856,16 +1895,11 @@ def build_profile(
     def role_cap(c: dict[str, Any]) -> int:
         return min(y for t, y in role_start if t >= LEVELS.index(c["level"]))
 
-    caps = [role_cap(c) if LEVELS.index(c["level"]) >= 1 else last_year for c in held_certs]
-    entry_cap = min(caps, default=last_year)  # the lowest-tier bounded credential's cap
-    caps = [
-        entry_cap if LEVELS.index(c["level"]) == 0 else cap
-        for c, cap in zip(held_certs, caps, strict=True)
-    ]
+    caps = [role_cap(c) if LEVELS.index(c["level"]) >= 1 else first_year for c in held_certs]
     # Each year is a stable hash draw within its cap, and the sorted draws are handed out in tier order, so a
     # higher tier is never dated before a lower one (a Master licence before the Journeyman licence). Because
-    # the caps do not fall with the tier, the k-th smallest draw is within the k-th credential's cap. A cell
-    # with one entry-tier credential is unchanged.
+    # the caps do not fall with the tier (the entry cap is the lowest possible year), the k-th smallest draw
+    # is within the k-th credential's cap.
     cert_years = sorted(
         first_year
         + _hash_int(seed, f"cert-year:{c['name']}") % (min(cap, last_year) - first_year + 1)
@@ -1919,9 +1953,9 @@ def build_profile(
         asked_certs = held_certs[-1:] + absent_certs[:1]
         cert_ask = ""
         if held_certs:
-            cert_ask += f" State {held_certs[-1]['name']} as a required licence or certification."
+            cert_ask += f" State {held_certs[-1]['name']} {CERT_REQUIRED_PHRASE}"
         if absent_certs:
-            cert_ask += f" State {absent_certs[0]['name']} as preferred."
+            cert_ask += f" State {absent_certs[0]['name']} {CERT_PREFERRED_PHRASE}"
         slots[jd_slots_for[2]] = _slot(
             "jd",
             f"A '{voice['needs']}' heading and four to six bullet lines. Require {', '.join(present + absent)}, and {years} or more years of experience.{cert_ask}",

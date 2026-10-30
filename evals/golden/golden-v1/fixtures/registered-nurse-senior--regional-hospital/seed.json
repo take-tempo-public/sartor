@@ -25,7 +25,7 @@
       "expires": null,
       "id": 802,
       "is_active": true,
-      "issued": "2020",
+      "issued": "2019",
       "issuer": "Resuscitation Training Council",
       "name": "Basic Life Support Card"
     },
@@ -64,7 +64,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Administer medications and IV therapy for assigned patients, cutting infusion-related delays by 45 percent through standard line checks at each dose."
+          "text": "Administer medications and manage IV therapy for unit patients, cutting infusion-related errors by 45 percent through standardized double checks."
         },
         {
           "display_order": 1,
@@ -75,7 +75,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Serve as charge nurse for the shift, assigning beds and leading discharge planning so patients leave with clear follow-up instructions."
+          "text": "Lead the unit as shift charge nurse, assigning staff and starting discharge planning early so patients leave on time with clear instructions."
         },
         {
           "display_order": 2,
@@ -86,7 +86,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinate with physicians during bedside handoff, reducing missed orders at shift change by 30 percent."
+          "text": "Coordinate with physicians through structured bedside handoff at shift change, reducing missed orders by 30 percent."
         },
         {
           "display_order": 3,
@@ -97,7 +97,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Assess patients on admission and throughout the shift, keeping clinical documentation current and complete for the care team."
+          "text": "Assess incoming and deteriorating patients and keep clinical documentation current so physicians and the next shift see an accurate picture."
         }
       ],
       "company": "Meridian Cross",
@@ -117,7 +117,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Supervises nursing aides as charge nurse at Meridian Cross, setting assignments and checking that patient care is completed on each shift."
+          "text": "Supervises nursing aides at Meridian Cross as Charge Nurse, assigning daily tasks and checking that patient care is complete and safe."
         },
         {
           "display_order": 1,
@@ -127,7 +127,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Serves as charge nurse for the shift at Meridian Cross, directing staff assignments and keeping patient care on track."
+          "text": "Serves as charge nurse for each assigned shift at Meridian Cross, managing staffing, patient flow and escalation of clinical concerns."
         }
       ],
       "titles": [
@@ -153,7 +153,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Strengthened shift handoff by reviewing telemetry monitoring data with incoming nurses, reducing unreported rhythm changes by 55 percent."
+          "text": "Used telemetry monitoring data to structure shift handoff, cutting unreported rhythm changes between shifts by 55 percent."
         },
         {
           "display_order": 1,
@@ -164,7 +164,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Charted each patient education session in the record, noting patient understanding and open questions for the next nurse."
+          "text": "Charted patient education sessions in the record, noting teach-back results so follow-up teaching stayed consistent across shifts."
         },
         {
           "display_order": 2,
@@ -175,7 +175,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Gave scheduled medications with vital signs monitoring before each dose, lowering held or delayed doses by 10 percent."
+          "text": "Gave scheduled and as-needed medications guided by vital signs monitoring, reducing held or late doses by 10 percent."
         },
         {
           "display_order": 3,
@@ -186,7 +186,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Coordinated with physicians on medication administration changes, confirming new orders before giving the first dose."
+          "text": "Coordinated with physicians on medication administration changes, confirming orders and reporting patient responses promptly."
         }
       ],
       "company": "Halcyon Services",
@@ -206,7 +206,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Handled shift handoff as a registered nurse at Halcyon Services, passing clear patient updates to the incoming team."
+          "text": "Worked as a Registered Nurse at Halcyon Services, giving and receiving shift handoff to keep patient care continuous between teams."
         },
         {
           "display_order": 1,
@@ -216,7 +216,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Assessed patients as a registered nurse at Halcyon Services, tracking changes in condition and reporting them to the care team."
+          "text": "Assessed patients each shift as a Registered Nurse at Halcyon Services, identifying changes in condition and escalating concerns to the care team."
         }
       ],
       "titles": [
@@ -242,7 +242,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Assessed patients before and after IV therapy, cutting line complications by 50 percent."
+          "text": "Assessed IV sites each shift and managed IV therapy under supervision, lowering line-related complications by 50 percent."
         },
         {
           "display_order": 1,
@@ -253,7 +253,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Taught patients and families about medications and warning signs as part of discharge planning."
+          "text": "Taught patients and families about medications and home care as part of discharge planning, using teach-back to confirm understanding."
         },
         {
           "display_order": 2,
@@ -264,7 +264,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Used bedside handoff at each shift change, reducing handoff omissions by 45 percent."
+          "text": "Adopted bedside handoff at shift change with patients present, reducing handoff omissions by 45 percent."
         },
         {
           "display_order": 3,
@@ -275,7 +275,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Recorded assessments and interventions in the record, keeping clinical documentation accurate and timely."
+          "text": "Recorded assessments, medications and care events in the record, following clinical documentation standards for completeness and timing."
         }
       ],
       "company": "Northfield Group",
@@ -295,7 +295,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Assessed patients as a graduate registered nurse at Northfield Group, building core bedside skills under experienced nurses."
+          "text": "Assessed patients as a Graduate Registered Nurse at Northfield Group, building core clinical skills alongside experienced nursing staff."
         },
         {
           "display_order": 1,
@@ -305,7 +305,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Charted care in the patient record as a graduate registered nurse at Northfield Group, keeping notes accurate and timely."
+          "text": "Charted care in the record as a Graduate Registered Nurse at Northfield Group, learning accurate and timely documentation practices."
         }
       ],
       "titles": [
@@ -390,7 +390,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Charge nurse with 7 years of experience guiding colleagues and taking on complex, high-acuity patient cases. Brings patient education, telemetry monitoring and vital signs monitoring to daily bedside care and to coaching newer nurses."
+      "text": "Registered nurse with about 7 years of experience, now working as a charge nurse who guides colleagues and takes on complex patients on the unit. Brings solid skills in patient education, telemetry monitoring and vital signs monitoring."
     },
     {
       "display_order": 1,
@@ -401,7 +401,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Senior registered nurse with about 7 years of experience who mentors colleagues and takes on difficult, unstable patients. Uses telemetry monitoring and vital signs monitoring to catch early changes, and patient education to prepare patients and families for recovery."
+      "text": "Charge nurse and B.S.N. graduate with 7 years of nursing experience who mentors staff and handles complex, high-acuity cases. Applies telemetry monitoring, vital signs monitoring and patient education to keep patients stable and prepared for discharge."
     }
   ],
   "tags": []

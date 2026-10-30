@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Setting how the team handles one area of the work."
       },
-      "edit_replacement": "Coordinates subcontractors across trades and processes change orders through pricing, setting how the team handles one area of the work",
-      "edit_target_substring": "Coordinates subcontractors across trades and processes change orders through pricing",
+      "edit_replacement": "Coordinates subcontractors through scope reviews and change orders, setting how the team handles one area of the work",
+      "edit_target_substring": "Coordinates subcontractors through scope reviews and change orders",
       "expected_iteration_themes": {
         "experience_probes": [
           "Contract administration exposure not yet covered by prior clarifications"

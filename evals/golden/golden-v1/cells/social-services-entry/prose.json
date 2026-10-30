@@ -5,32 +5,32 @@
     "effort": "medium",
     "kind": "generated",
     "model": "claude-opus-5-5",
-    "profile_sha256": "sha256:4531ab68a417114e7572905a9eac8e6bb5aa28a4e44b2bf79aaac107ca47ebac",
+    "profile_sha256": "sha256:04f48ad5577ab70f998eed523a2676008eb829726837076fbfc98f9fb5a3a191",
     "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
     "prompt_version": "golden-author-2",
     "request_ids": [
-      "req_011CgVTdAUzcbmyJvyvBR5ML"
+      "req_011CgXPgnhxXCE8cHxCpsjKo"
     ],
     "requested_model": "claude-opus-5-5",
     "usage": {
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
       "input_tokens": 2859,
-      "output_tokens": 1890
+      "output_tokens": 2029
     }
   },
   "schema": 1,
   "slots": {
-    "jd.county-human-services.about": "Duties\nFairmont County Human Services is seeking a Case Aide to support caseworkers in serving individuals and families across the county. Working on site in Fairmont under the direction of a casework supervisor, the Case Aide helps residents through intake, assessment and referral, keeps accurate case records, and supports staff in preparing documentation for hearings. The position requires steady judgment, respect for client confidentiality and clear communication with families and partner agencies.",
-    "jd.county-human-services.duties": "Responsibilities of the position\n- Conduct intake interviews with individuals and families requesting services.\n- Complete needs assessments and record findings in the case file.\n- Prepare reports for hearings in coordination with the assigned caseworker.\n- Refer families to housing and food programs and follow up on the status of each referral.\n- Maintain accurate, confidential case records and update them after each contact.\n- Assist caseworkers with service planning and scheduling client appointments.",
-    "jd.county-human-services.needs": "Qualifications and conditions of employment\n- 1 or more years of experience in human services casework or a related field.\n- Working knowledge of needs assessments, benefits enrollment and referral coordination.\n- Ability to prepare court reports and to conduct home visits throughout the county.\n- Skill in motivational interviewing with individuals and families.\n- Mandated Reporter Certificate required at the time of hire.\n- Case Management Certificate preferred.",
-    "r1.b1": "Coordinates with schools and clinics through referral coordination for resident families, raising the share of completed referrals by 55 percent.",
-    "r1.b2": "Conducts intake interviews and needs assessments with residents and drafts court reports that summarize household circumstances for supervisor review.",
-    "r1.b3": "Maintains case records in Microsoft Access, reducing the time needed to locate and update client files by 30 percent.",
-    "r1.b4": "Refers families to housing and food programs and applies crisis intervention when households face an urgent risk of losing shelter.",
-    "r1.i1": "Conducts intake interviews and needs assessments for residents seeking housing support at Stonegate Housing Authority, working under close supervision.",
-    "r1.i2": "Writes service plans for resident families at Stonegate Housing Authority, turning assessment findings into clear steps reviewed with a supervisor.",
-    "summary.1": "Entry-level social services caseworker with about 1 year of experience supporting housing authority clients under close supervision. Brings client advocacy, needs assessments and record keeping in Microsoft Access to a small, supervised share of the caseload.",
-    "summary.2": "Case aide with about 1 year of experience handling a small share of casework alongside a supervisor in public housing services. Applies needs assessments, client advocacy and Microsoft Access to intake, referrals and case records."
+    "jd.county-human-services.about": "Fairmont County Human Services is seeking a Case Aide to support caseworkers who serve county residents and families. Under close supervision, the Case Aide meets with residents at intake, gathers information for assessments, connects families with community resources and keeps accurate case records. This is an on-site position in Fairmont, OH.",
+    "jd.county-human-services.duties": "Responsibilities of the position\n- Conduct intake interviews with residents applying for county services\n- Complete needs assessments and record findings in the case file\n- Refer families to housing, food and other community programs, and follow up to confirm services were received\n- Prepare court reports and case summaries for hearings under the direction of an assigned caseworker\n- Maintain accurate case records and protect client confidentiality",
+    "jd.county-human-services.needs": "Qualifications and conditions of employment\n- 1 or more years of experience in social services casework or a related field\n- Working knowledge of needs assessments, benefits enrollment and referral coordination\n- Ability to prepare court reports and conduct home visits in the community\n- Skill in motivational interviewing with individuals and families\n- Required: a current Mandated Reporter Certificate\n- Preferred: a Case Management Certificate",
+    "r1.b1": "Coordinates with local schools and clinics through referral coordination, raising the share of completed tenant referrals by 55 percent.",
+    "r1.b2": "Conducts intake interviews and needs assessments with tenants and drafts court reports from the findings for supervisor review.",
+    "r1.b3": "Maintains tenant case records in Microsoft Access, cutting the time spent locating client files by 30 percent.",
+    "r1.b4": "Refers families to housing and food programs and applies crisis intervention when tenants face an urgent loss of shelter or food.",
+    "r1.i1": "Handles intake interviews and needs assessments for tenants seeking support at Stonegate Housing Authority under close supervision.",
+    "r1.i2": "Writes service plans for tenants at Stonegate Housing Authority, drawing on needs assessments and working closely with a supervisor.",
+    "summary.1": "Entry-level social services case aide with about 1 year of experience supporting tenants at a housing authority under close supervision. Brings client advocacy, needs assessments and case record keeping in Microsoft Access, along with a B.S.W. in Social Work.",
+    "summary.2": "Case aide with about 1 year of experience handling a small share of casework alongside a supervisor at Stonegate Housing Authority. Skilled in client advocacy, needs assessments, intake interviews and tracking cases in Microsoft Access."
   }
 }

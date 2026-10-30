@@ -4,36 +4,36 @@ taylor.park@example.com | (555) 010-4012 | linkedin.com/in/example-taylor-logist
 
 ## Summary
 
-Transportation supervisor with 15 years in truck driving and dispatch, leading a driver team and answering for its safety and delivery results. Brings hands-on skill in cargo documentation, trailer coupling and defensive driving, backed by a commercial driver licence and hazardous materials endorsement.
+Transportation supervisor with 15 years in commercial driving and dispatch, leading a driver team and answering for its safety, on-time delivery and compliance results. Brings hands-on strength in cargo documentation, trailer coupling, defensive driving, route planning and hazmat handling, backed by a Commercial Driver Licence with Hazardous Materials Endorsement.
 
 ## Experience
 
 ### Transportation Supervisor — Tidewater Haulers
 *May 2018 – present*
 
-- Coordinates with dispatch on load assignments and trailer coupling checks, cutting yard turnaround time by 20 percent.
-- Trains new drivers in cargo documentation and reviews their paperwork until they complete it accurately on their own.
-- Supervises load securement checks and hours-of-service logging, reducing load-related compliance findings by 30 percent.
-- Reviews driver logs each week and pairs the findings with defensive driving coaching for drivers who need it.
-- Enforces pre-trip inspections across the fleet, raising on-time customer deliveries by 45 percent.
+- Coordinates trailer swaps with dispatch and oversees trailer coupling checks in the yard, cutting departure delays by 20 percent.
+- Trains new drivers on cargo documentation, walking each new hire through load paperwork before they run routes on their own.
+- Leads load securement and inspection checks and reviews hours-of-service logging for each shift, reducing load-related exceptions by 30 percent.
+- Maintains driver logs and reviews them against defensive driving practices, following up with drivers when entries show unsafe patterns.
+- Enforces pre-trip inspections before each dispatch, raising on-time customer deliveries by 45 percent.
 
 ### Senior Truck Driver — Granite Ridge Transport
 *December 2014 – May 2018*
 
-- Used route planning to choose regional delivery routes, cutting empty miles by 25 percent.
-- Reported vehicle and trailer defects before hazardous loads, applying hazmat handling rules to keep unsafe equipment off the road.
-- Built driver schedules and routes from fuel and mileage logs, lowering fuel cost per mile by 45 percent.
-- Performed pre-trip vehicle inspections, including trailer coupling checks before every departure.
-- Coordinated with dispatch on pickups and drop-offs, keeping cargo documentation complete and cutting paperwork holds by 30 percent.
+- Applied route planning to long-haul runs, reducing average delivery transit time by 25 percent.
+- Reported vehicle defects promptly during hazmat handling assignments, keeping hazardous loads off the road until repairs were cleared.
+- Built driver schedules and routes from fuel and mileage logs, cutting empty miles by 45 percent.
+- Performed pre-trip vehicle inspections with a focus on trailer coupling, confirming fifth wheel and air line connections before departure.
+- Coordinated with dispatch on load status and kept cargo documentation complete, lowering paperwork-related delivery holds by 30 percent.
 
 ### Class A Truck Driver — Stonebridge Logistics
 *July 2011 – December 2014*
 
-- Kept accurate hours-of-service logging on every route, improving on-time customer deliveries by 10 percent.
-- Planned routes around traffic and weather risks, applying defensive driving on every trip.
-- Completed pre-trip inspections before each shift and reported defects early, reducing roadside breakdowns by 50 percent.
-- Checked tires, brakes and lights during pre-trip vehicle inspections and used route planning to set departure times.
-- Coordinated with dispatch on hazardous loads, following hazmat handling procedures and reducing loading delays by 30 percent.
+- Kept hours-of-service logging accurate on each shift, planning breaks around delivery windows and improving on-time customer deliveries by 10 percent.
+- Planned routes around traffic, weather and road conditions, applying defensive driving to keep deliveries safe and steady.
+- Completed pre-trip inspections and reported vehicle defects to maintenance, reducing roadside breakdowns by 50 percent.
+- Checked brakes, tires, lights and fluids during pre-trip vehicle inspections and used route planning to set departure times.
+- Coordinated with dispatch on hazmat handling requirements for each load, cutting delays at receiving docks by 30 percent.
 
 ## Education
 

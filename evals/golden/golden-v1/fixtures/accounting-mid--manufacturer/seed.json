@@ -16,7 +16,7 @@
       "expires": null,
       "id": 801,
       "is_active": true,
-      "issued": "2026",
+      "issued": "2022",
       "issuer": "Accounting Training Council",
       "name": "Bookkeeping Certificate"
     }
@@ -46,7 +46,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Prepares audit documentation for sales tax filing, cutting the time needed to answer auditor requests by 45 percent."
+          "text": "Prepares audit schedules and supporting files for sales tax filing, cutting auditor follow-up requests by 45 percent."
         },
         {
           "display_order": 1,
@@ -57,7 +57,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Runs the month-end close in QuickBooks, posting entries and reviewing ledger balances before statements are prepared."
+          "text": "Runs the month-end close in QuickBooks, posting accruals and reviewing ledger balances before statements go to clinic leadership."
         },
         {
           "display_order": 2,
@@ -68,7 +68,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Builds budget variance reports supported by account reconciliation, reducing unexplained variances by 15 percent."
+          "text": "Builds budget variance reports backed by account reconciliation of each ledger, reducing unexplained variances by 15 percent."
         },
         {
           "display_order": 3,
@@ -79,7 +79,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Compiles tax schedules from accounts receivable records, matching balances to the general ledger for each filing period."
+          "text": "Maintains tax schedules tied to accounts receivable balances, matching patient billing records to the general ledger."
         }
       ],
       "company": "Harborview Community Clinic",
@@ -99,7 +99,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Prepares financial statements for Harborview Community Clinic, drawing on reconciled ledger balances and supporting schedules."
+          "text": "At Harborview Community Clinic, prepares monthly financial statements and supporting schedules for clinic management."
         },
         {
           "display_order": 1,
@@ -109,7 +109,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Leads audit preparation at Harborview Community Clinic, assembling reconciliations and documentation for auditor review."
+          "text": "Handles audit preparation for Harborview Community Clinic, assembling reconciliations, tax records and supporting documents for external reviewers."
         }
       ],
       "titles": [
@@ -135,7 +135,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Performed bank reconciliations as part of the month-end close, shortening the close cycle by 20 percent."
+          "text": "Completed bank reconciliations as part of the month-end close, shortening the close cycle by 20 percent."
         },
         {
           "display_order": 1,
@@ -146,7 +146,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Reviewed vendor invoices for capital purchases and recorded them through fixed asset tracking, keeping the asset register in line with the ledger."
+          "text": "Reviewed vendor invoices for capital purchases and recorded qualifying items through fixed asset tracking to keep the asset register current."
         },
         {
           "display_order": 2,
@@ -157,7 +157,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Prepared monthly financial statements with budget variance analysis, reducing review revisions by 50 percent."
+          "text": "Prepared monthly financial statements with budget variance analysis, cutting report turnaround time by 50 percent."
         },
         {
           "display_order": 3,
@@ -168,7 +168,7 @@
           "pattern_kind": null,
           "source": "primary:resume.md",
           "tag_links": [],
-          "text": "Organized audit support schedules in Microsoft Excel, giving auditors traceable workpapers for each account balance."
+          "text": "Built Microsoft Excel workbooks that organized ledger detail and support files for annual audit preparation."
         }
       ],
       "company": "Northfield Group",
@@ -188,7 +188,7 @@
           "is_pending_review": false,
           "label": "variant 1",
           "source": "manual",
-          "text": "Supported audit preparation at Northfield Group by compiling schedules and documentation for auditor requests."
+          "text": "Supported audit preparation at Northfield Group by organizing schedules, reconciliations and documentation for year-end reviews."
         },
         {
           "display_order": 1,
@@ -198,7 +198,7 @@
           "is_pending_review": false,
           "label": "variant 2",
           "source": "manual",
-          "text": "Handled bank reconciliations at Northfield Group, matching bank activity to the general ledger each period."
+          "text": "Performed monthly bank reconciliations for Northfield Group and resolved discrepancies before the books were closed."
         }
       ],
       "titles": [
@@ -283,7 +283,7 @@
       "label": "default",
       "source": "manual",
       "tag_links": [],
-      "text": "Specialist-level accounting professional with 5 years of experience owning recurring processes from request to completion, including month-end close and account reconciliation. Applies fixed asset tracking, QuickBooks and Microsoft Excel to keep ledgers accurate and ready for audit."
+      "text": "Accountant with 5 years of experience owning recurring accounting processes from initial request to completed deliverable. Handles fixed asset tracking, month-end close and account reconciliation using QuickBooks and Microsoft Excel."
     },
     {
       "display_order": 1,
@@ -294,7 +294,7 @@
       "label": "variant 2",
       "source": "manual",
       "tag_links": [],
-      "text": "Specialist-level accountant with about 5 years of experience handling the month-end close from first request through final sign-off. Maintains account reconciliation and fixed asset tracking schedules so each recurring cycle closes with supported balances."
+      "text": "Specialist-level accounting professional with about 5 years in staff accountant and accountant roles. Owns month-end close, account reconciliation and fixed asset tracking from request through completion, backed by a Bookkeeping Certificate and a B.S. in Accounting."
     }
   ],
   "tags": []

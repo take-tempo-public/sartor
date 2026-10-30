@@ -5,38 +5,38 @@
     "effort": "medium",
     "kind": "generated",
     "model": "claude-opus-5-5",
-    "profile_sha256": "sha256:80dece93d1a5ecc69016ca454a01b5d259255db21a3ac6151e9cf96c352eac6e",
+    "profile_sha256": "sha256:72d0277f5bedcabd54d7987201d265898d4fbe1a284f3d36996bbbb68d3a09da",
     "prompt_sha256": "sha256:816b0dbdf73a32652437d825452335654d7489db71be00c039ccde30fe795da0",
     "prompt_version": "golden-author-2",
     "request_ids": [
-      "req_011CgVN9um8TRsvmcuKq4M7h"
+      "req_011CgXP2gEDhseRyjguvy3YX"
     ],
     "requested_model": "claude-opus-5-5",
     "usage": {
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
       "input_tokens": 3711,
-      "output_tokens": 2299
+      "output_tokens": 3004
     }
   },
   "schema": 1,
   "slots": {
-    "jd.manufacturer.about": "Position summary\nKensington Manufacturing Group seeks an Accountant to support the general ledger, invoice review, tax schedules and audit preparation for its manufacturing operations. The Accountant will maintain accurate records and work with operations and finance staff to keep reporting timely and complete. Minimum qualifications include experience with budget variance analysis, fixed asset tracking, accounts receivable and journal entries. Preferred qualifications include a professional accounting licence.",
-    "jd.manufacturer.duties": "Responsibilities\n- Review vendor invoices for accuracy, approval and correct coding before payment.\n- Prepare and maintain tax schedules supporting periodic filings.\n- Assemble audit preparation materials, including reconciliations and supporting documentation.\n- Record journal entries and maintain the general ledger.\n- Track fixed assets and reconcile the asset register to the ledger.\n- Respond to auditor and management requests for financial information.",
-    "jd.manufacturer.needs": "Minimum and preferred qualifications\n- 5 or more years of accounting experience.\n- Working knowledge of budget variance analysis, fixed asset tracking and accounts receivable.\n- Experience preparing and posting journal entries.\n- Proficiency in Microsoft Excel and SAP.\n- Bookkeeping Certificate required.\n- Certified Public Accountant Licence preferred.",
-    "r1.b1": "Prepares audit documentation for sales tax filing, cutting the time needed to answer auditor requests by 45 percent.",
-    "r1.b2": "Runs the month-end close in QuickBooks, posting entries and reviewing ledger balances before statements are prepared.",
-    "r1.b3": "Builds budget variance reports supported by account reconciliation, reducing unexplained variances by 15 percent.",
-    "r1.b4": "Compiles tax schedules from accounts receivable records, matching balances to the general ledger for each filing period.",
-    "r1.i1": "Prepares financial statements for Harborview Community Clinic, drawing on reconciled ledger balances and supporting schedules.",
-    "r1.i2": "Leads audit preparation at Harborview Community Clinic, assembling reconciliations and documentation for auditor review.",
-    "r2.b1": "Performed bank reconciliations as part of the month-end close, shortening the close cycle by 20 percent.",
-    "r2.b2": "Reviewed vendor invoices for capital purchases and recorded them through fixed asset tracking, keeping the asset register in line with the ledger.",
-    "r2.b3": "Prepared monthly financial statements with budget variance analysis, reducing review revisions by 50 percent.",
-    "r2.b4": "Organized audit support schedules in Microsoft Excel, giving auditors traceable workpapers for each account balance.",
-    "r2.i1": "Supported audit preparation at Northfield Group by compiling schedules and documentation for auditor requests.",
-    "r2.i2": "Handled bank reconciliations at Northfield Group, matching bank activity to the general ledger each period.",
-    "summary.1": "Specialist-level accounting professional with 5 years of experience owning recurring processes from request to completion, including month-end close and account reconciliation. Applies fixed asset tracking, QuickBooks and Microsoft Excel to keep ledgers accurate and ready for audit.",
-    "summary.2": "Specialist-level accountant with about 5 years of experience handling the month-end close from first request through final sign-off. Maintains account reconciliation and fixed asset tracking schedules so each recurring cycle closes with supported balances."
+    "jd.manufacturer.about": "Position summary\nKensington Manufacturing Group seeks an Accountant to join its finance team on site in Milwaukee, WI. The Accountant will review invoices, prepare tax schedules and support audit preparation for manufacturing operations. At a minimum, candidates must bring hands-on general ledger experience and strong spreadsheet skills. A professional accounting licence is preferred.",
+    "jd.manufacturer.duties": "Responsibilities\n- Review vendor invoices for accuracy, approval and correct account coding before payment.\n- Prepare sales and use tax schedules and supporting reconciliations for timely filing.\n- Assemble schedules, documentation and account analyses for internal and external audits.\n- Record journal entries and reconcile general ledger accounts during the month-end close.\n- Track fixed assets and maintain depreciation records for plant equipment.",
+    "jd.manufacturer.needs": "Minimum and preferred qualifications\n- 5 or more years of accounting experience.\n- Demonstrated skill in budget variance analysis, fixed asset tracking and accounts receivable.\n- Proficiency in Microsoft Excel and SAP.\n- Experience preparing and posting journal entries.\n- Required certification: Bookkeeping Certificate.\n- Preferred licence: Certified Public Accountant Licence.",
+    "r1.b1": "Prepares audit schedules and supporting files for sales tax filing, cutting auditor follow-up requests by 45 percent.",
+    "r1.b2": "Runs the month-end close in QuickBooks, posting accruals and reviewing ledger balances before statements go to clinic leadership.",
+    "r1.b3": "Builds budget variance reports backed by account reconciliation of each ledger, reducing unexplained variances by 15 percent.",
+    "r1.b4": "Maintains tax schedules tied to accounts receivable balances, matching patient billing records to the general ledger.",
+    "r1.i1": "At Harborview Community Clinic, prepares monthly financial statements and supporting schedules for clinic management.",
+    "r1.i2": "Handles audit preparation for Harborview Community Clinic, assembling reconciliations, tax records and supporting documents for external reviewers.",
+    "r2.b1": "Completed bank reconciliations as part of the month-end close, shortening the close cycle by 20 percent.",
+    "r2.b2": "Reviewed vendor invoices for capital purchases and recorded qualifying items through fixed asset tracking to keep the asset register current.",
+    "r2.b3": "Prepared monthly financial statements with budget variance analysis, cutting report turnaround time by 50 percent.",
+    "r2.b4": "Built Microsoft Excel workbooks that organized ledger detail and support files for annual audit preparation.",
+    "r2.i1": "Supported audit preparation at Northfield Group by organizing schedules, reconciliations and documentation for year-end reviews.",
+    "r2.i2": "Performed monthly bank reconciliations for Northfield Group and resolved discrepancies before the books were closed.",
+    "summary.1": "Accountant with 5 years of experience owning recurring accounting processes from initial request to completed deliverable. Handles fixed asset tracking, month-end close and account reconciliation using QuickBooks and Microsoft Excel.",
+    "summary.2": "Specialist-level accounting professional with about 5 years in staff accountant and accountant roles. Owns month-end close, account reconciliation and fixed asset tracking from request through completion, backed by a Bookkeeping Certificate and a B.S. in Accounting."
   }
 }

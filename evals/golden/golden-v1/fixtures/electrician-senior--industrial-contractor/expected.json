@@ -22,8 +22,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Planning jobs and checking the work of others."
       },
-      "edit_replacement": "including lighting installation in new and renovated spaces, planning jobs and checking the work of others",
-      "edit_target_substring": "including lighting installation in new and renovated spaces",
+      "edit_replacement": "confirming each fixture and switch leg operates as designed., planning jobs and checking the work of others",
+      "edit_target_substring": "confirming each fixture and switch leg operates as designed.",
       "expected_iteration_themes": {
         "experience_probes": [
           "Fire alarm wiring exposure not yet covered by prior clarifications"

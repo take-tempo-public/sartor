@@ -24,8 +24,8 @@
       "clarification_answers": {
         "iter1_q1": "Yes. Carrying a full caseload or class without close supervision."
       },
-      "edit_replacement": "Conduct intake interviews with families and refer them to housing, carrying a full caseload or class without close supervision",
-      "edit_target_substring": "Conduct intake interviews with families and refer them to housing",
+      "edit_replacement": "Conducts intake interviews to identify family needs and refers households, carrying a full caseload or class without close supervision",
+      "edit_target_substring": "Conducts intake interviews to identify family needs and refers households",
       "expected_iteration_themes": {
         "experience_probes": [
           "Case notes exposure not yet covered by prior clarifications"
