@@ -100,4 +100,29 @@ Pairs (4): pair--accounting-entry-to-accounting-mid, pair--admin-assistant-mid-t
 
 ## Measurements
 
-_(appended as taken: pilot, sweep, analysis, re-measure)_
+### Pilot: `web-backend-lead--freight-startup`, assemble mode (2026-10-31, 17:10 to 17:12 local)
+
+Command: `python -u evals/runner.py --fixture web-backend-lead--freight-startup --mode assemble --max-spend 0.40 --out-dir evals/results/calibration-2026-10/web-backend-lead--freight-startup`. Result file `20261101_001009Z.jsonl` (gitignored). The script's own marker is `PILOT_EXIT=2`: the runner's low-score gate (3 pass, 4 fail), not a pipeline error (the pipeline finished in 72.8 s and an `eval_composite` record exists). Memory `reference-eval-harness-auth-and-cost` says exit 2 is expected on full runs.
+
+**Spend, from the call log by trace id `eaf0e3710fd75833befc8c1f0f5ee73d`: $0.1541 over 14 rows, 0 non-ok.** The free estimate for the same fixture was $0.1062 with the judges excluded.
+
+| call | n | $ |
+|---|---|---|
+| judge_grade | 6 | 0.0694 |
+| analyze_synthesis | 1 | 0.0430 |
+| generate_cover_letter | 1 | 0.0138 |
+| analyze_extraction_retry | 1 | 0.0076 |
+| clarify | 1 | 0.0072 |
+| analyze_extraction | 1 | 0.0069 |
+| recommend | 1 | 0.0032 |
+| recommend_summary | 1 | 0.0017 |
+| judge_distinctiveness | 1 | 0.0013 |
+
+- **The judges are 46% of the trace** ($0.0707 of $0.1541): about $0.0116 per `judge_grade` call (n=6) and $0.0013 for `judge_distinctiveness` (n=1). The estimate had left both out. One data point, one fixture.
+- **`iterate_clarify` did not fire** (the plan priced it at $0.0219 and a seventh `judge_grade`), because the iteration phase returned `scenario_misaligned` (below). So the estimate overstated that part by $0.0219 and understated the judges.
+- **An `analyze_extraction_retry` row** ($0.0076) is in the trace; the estimate is a floor that excludes retries. Not examined further.
+- **`scenario_misaligned`: 1 of 1.** The `iteration_quality` record has `score null`, `status "scenario_misaligned"`. One cell is no rate; the stub rehearsal's figure was 0 of 96 with distinct prose (`docs/dev/blast-radius/eval-dataset-v1.md:165-171`).
+- **Scores:** ats_format 4.2, callback_likelihood 3.8, clarification_quality 4.2, grounding 4.8, keyword_coverage 3.8, tone 3.2; `eval_composite` 3.918 from 6 rubrics. No `judge_error`.
+- Records the judges flagged on this one cell, read from the record, not verified against the text (it is not kept): `years_claim_ungrounded:13_years_vs_calculated_11_years` (keyword_coverage), `invented_metric` and `forbidden_pattern_match` with grounding still 4.8, `hedged_years_claim` (callback_likelihood). These are the judges' words about an assembled résumé; they are not a finding about the golden cell until read.
+
+**Projection for the rest (arithmetic, not a measurement):** 27 more fixtures at the pilot's $0.1541 is $4.16, so $4.31 in all, under the $5.00 cap by about $0.69. It is a projection from n=1 and the sign of the error is not obvious: a cell whose iteration lands adds `iterate_clarify` and a seventh judge (about $0.034), up to roughly $0.8 over 24 cells, which would put the total near the cap. The stop rule (spent + dearest-so-far over $5.00) halts the sweep before it crosses; the last pairs would be the ones left out.
