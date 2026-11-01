@@ -1,28 +1,28 @@
 {
   "kinds": {
     "analyze_extraction": {
-      "cache_read": 123,
-      "cache_write": 1218,
-      "input": 1887,
-      "measured_on": "2026-10-21",
+      "cache_read": 105,
+      "cache_write": 1040,
+      "input": 1952,
+      "measured_on": "2026-10-31",
       "model": "claude-haiku-4-5-20251001",
-      "output": 1230,
-      "rows": 164
+      "output": 1185,
+      "rows": 192
     },
     "analyze_synthesis": {
-      "cache_read": 1330,
-      "cache_write": 4351,
-      "input": 2031,
-      "measured_on": "2026-10-21",
+      "cache_read": 1385,
+      "cache_write": 3635,
+      "input": 1949,
+      "measured_on": "2026-10-31",
       "model": "claude-sonnet-5",
-      "output": 3145,
-      "rows": 82
+      "output": 3042,
+      "rows": 110
     },
     "avatar_answer": {
       "cache_read": 0,
       "cache_write": 0,
       "input": 2857,
-      "measured_on": "2026-10-21",
+      "measured_on": "2026-10-31",
       "model": "claude-haiku-4-5-20251001",
       "output": 164,
       "rows": 73
@@ -31,7 +31,7 @@
       "cache_read": 0,
       "cache_write": 0,
       "input": 195,
-      "measured_on": "2026-10-21",
+      "measured_on": "2026-10-31",
       "model": "claude-haiku-4-5-20251001",
       "output": 13,
       "rows": 1
@@ -39,26 +39,35 @@
     "clarify": {
       "cache_read": 0,
       "cache_write": 0,
-      "input": 3661,
-      "measured_on": "2026-10-21",
+      "input": 3616,
+      "measured_on": "2026-10-31",
       "model": "claude-haiku-4-5-20251001",
-      "output": 710,
-      "rows": 125
+      "output": 703,
+      "rows": 153
     },
     "critique_proposal": {
       "cache_read": 0,
       "cache_write": 0,
       "input": 1544,
-      "measured_on": "2026-10-21",
+      "measured_on": "2026-10-31",
       "model": "claude-haiku-4-5-20251001",
       "output": 387,
       "rows": 2
+    },
+    "dataset_author": {
+      "cache_read": 0,
+      "cache_write": 0,
+      "input": 4067,
+      "measured_on": "2026-10-31",
+      "model": "claude-opus-5-5",
+      "output": 2782,
+      "rows": 182
     },
     "draft_experience_summary": {
       "cache_read": 808,
       "cache_write": 808,
       "input": 1166,
-      "measured_on": "2026-10-21",
+      "measured_on": "2026-10-31",
       "model": "claude-sonnet-5",
       "output": 386,
       "rows": 2
@@ -67,7 +76,7 @@
       "cache_read": 0,
       "cache_write": 1362,
       "input": 10305,
-      "measured_on": "2026-10-21",
+      "measured_on": "2026-10-31",
       "model": "claude-sonnet-5",
       "output": 951,
       "rows": 24
@@ -76,7 +85,7 @@
       "cache_read": 0,
       "cache_write": 0,
       "input": 4613,
-      "measured_on": "2026-10-21",
+      "measured_on": "2026-10-31",
       "model": "claude-sonnet-5",
       "output": 200,
       "rows": 50
@@ -85,7 +94,7 @@
       "cache_read": 0,
       "cache_write": 1184,
       "input": 4211,
-      "measured_on": "2026-10-21",
+      "measured_on": "2026-10-31",
       "model": "claude-sonnet-5",
       "output": 174,
       "rows": 1
@@ -94,7 +103,7 @@
       "cache_read": 0,
       "cache_write": 0,
       "input": 578,
-      "measured_on": "2026-10-21",
+      "measured_on": "2026-10-31",
       "model": "claude-haiku-4-5-20251001",
       "output": 540,
       "rows": 87
@@ -103,43 +112,61 @@
       "cache_read": 2382,
       "cache_write": 878,
       "input": 7892,
-      "measured_on": "2026-10-21",
+      "measured_on": "2026-10-31",
       "model": "claude-sonnet-5",
       "output": 2340,
       "rows": 25
     },
     "generate_cover_letter": {
-      "cache_read": 1478,
-      "cache_write": 50,
-      "input": 3365,
-      "measured_on": "2026-10-21",
+      "cache_read": 1572,
+      "cache_write": 25,
+      "input": 3315,
+      "measured_on": "2026-10-31",
       "model": "claude-sonnet-5",
-      "output": 753,
-      "rows": 28
+      "output": 708,
+      "rows": 56
     },
     "iterate_clarify": {
-      "cache_read": 0,
-      "cache_write": 1317,
-      "input": 5468,
-      "measured_on": "2026-10-21",
+      "cache_read": 1162,
+      "cache_write": 366,
+      "input": 3804,
+      "measured_on": "2026-10-31",
       "model": "claude-sonnet-5",
-      "output": 765,
-      "rows": 4
+      "output": 723,
+      "rows": 23
+    },
+    "judge_distinctiveness": {
+      "cache_read": 0,
+      "cache_write": 0,
+      "input": 796,
+      "measured_on": "2026-10-31",
+      "model": "claude-haiku-4-5-20251001",
+      "output": 77,
+      "rows": 28
+    },
+    "judge_grade": {
+      "cache_read": 0,
+      "cache_write": 0,
+      "input": 8957,
+      "measured_on": "2026-10-31",
+      "model": "claude-haiku-4-5-20251001",
+      "output": 477,
+      "rows": 187
     },
     "recommend": {
       "cache_read": 0,
       "cache_write": 0,
-      "input": 4245,
-      "measured_on": "2026-10-21",
+      "input": 3676,
+      "measured_on": "2026-10-31",
       "model": "claude-haiku-4-5-20251001",
-      "output": 382,
-      "rows": 97
+      "output": 341,
+      "rows": 125
     },
     "recommend_experience_summary": {
       "cache_read": 0,
       "cache_write": 0,
       "input": 2360,
-      "measured_on": "2026-10-21",
+      "measured_on": "2026-10-31",
       "model": "claude-haiku-4-5-20251001",
       "output": 192,
       "rows": 1
@@ -148,7 +175,7 @@
       "cache_read": 0,
       "cache_write": 0,
       "input": 1969,
-      "measured_on": "2026-10-21",
+      "measured_on": "2026-10-31",
       "model": "claude-haiku-4-5-20251001",
       "output": 141,
       "rows": 10
@@ -156,17 +183,17 @@
     "recommend_summary": {
       "cache_read": 0,
       "cache_write": 0,
-      "input": 1370,
-      "measured_on": "2026-10-21",
+      "input": 1268,
+      "measured_on": "2026-10-31",
       "model": "claude-haiku-4-5-20251001",
-      "output": 180,
-      "rows": 42
+      "output": 153,
+      "rows": 70
     },
     "suggest_skill": {
       "cache_read": 0,
       "cache_write": 0,
       "input": 12441,
-      "measured_on": "2026-10-21",
+      "measured_on": "2026-10-31",
       "model": "claude-haiku-4-5-20251001",
       "output": 3264,
       "rows": 2

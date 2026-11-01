@@ -66,3 +66,18 @@ Asked, after the hand-read found the certification-requirement defect: raise the
 **Declared gaps.** The status check is a word list: it misses paraphrase ("ideally", "a plus") and covers "preferred with nothing to prefer" only, not a credential called required twice. The entry cap is checked by the gate's tests, not before a paid request (a profile carries no tier map). 73 of the original 96 cells were never read whole. All **unenforced**. Dossier: `docs/dev/blast-radius/eval-dataset-v1-credentials.md`.
 
 **Still open on this item:** scopes 3 to 6, unchanged.
+
+### 2026-10-31 -- scope 3 run as a staged subset on feat/eval-calibration-subset
+
+**Owner decisions (chat):** run scope 3 as a paid ladder (a 1-cell pilot, then the sweep after a checkpoint); total cap $5.00, raised to **$10.00** after the pilot; **judge-to-judge agreement is deferred to item 189** (no second judge exists: `JUDGE_MODEL` is pinned, there is no `--judge-model` flag, and a result record does not keep the judged text). Dossier with the sample, stop rules and every measurement: `docs/dev/blast-radius/eval-calibration-subset.md`.
+
+**Run:** 24 cells (one per profession, level rotated 6/6/6/6, all five settings present) and 4 pairs, assemble mode, one runner call each. **Spend $4.4414** from the call log by trace id (424 rows, 0 non-ok), judges 48.5% of it. Cells $0.1624 each, pairs $0.1361. All 28 fixtures wrote a composite; 1 `judge_error` of 215 judge calls.
+
+**Findings:**
+- **`scenario_misaligned`: 5 of 24 cells (20.8%, Wilson 95% about 9% to 41%).** The stub rehearsal's 0 of 96 does not carry over. A purposive sample, directional; why the edit target is missing from the assembled résumé was not examined. Whether about one cell in five is acceptable, or the scenarios should be re-derived, is not decided. A change to any of the 24 cells or 4 pairs would make this subset's measurements stale, and a full run scores the whole set, so the rule stands: no cell changes after the calibration run.
+- **Unexplained, for item 189: the grounding judge reports tenure inflation of about two years on 4 of 28 outputs,** while the deterministic `fabricated_specifics` check flagged 0 on all 28. One reading (inferred, untested): the judge counts years to a date about two years before the run, since its payload has no current date (`evals/runner.py:2276-2288`). The rival reading is that the pipeline inflates tenure. One judge call with a date line (about $0.011) would separate them.
+- The estimate with the judges priced: **full golden-v1 floor $22.25 (assemble) and $25.21 (generate)**; the estimate was 8.5% high on this sample.
+
+**Catalog:** `evals/catalog/costs.json` re-measured (`measure --write`): `judge_grade`, `judge_distinctiveness` and `dataset_author` added. `tests/test_eval_spend.py` had four tests pinning "the judges are unmeasured" against the real file; they now build that state with a fixture, plus one test for the priced case.
+
+**Not done, still open on this item:** the full calibration run (this subset is 28 of 132 fixtures, one mode), scope 4 (tier sizes, now with a measured per-fixture cost), scopes 5 and 6. Judge-to-judge agreement moved to item 189. Generate mode was not run.

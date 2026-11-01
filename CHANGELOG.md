@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Measured: a 28-fixture calibration subset of golden-v1, and the judge kinds are now priced in `--estimate` (`feat/eval-calibration-subset`, item 194, scope 3)
+
+**The paid calls were 424 across 28 eval runs in assemble mode (24 cells, 4 pairs; $4.4414 from the call log by trace id, under the owner's $10.00 cap), and no dependency was added.** No golden cell, facts file or prompt changed; `golden_set check` still prints `OK (96 cells)`. Item 194 stays `open` for the full run, tier sizes, retiring `evals/fixtures/synthetic/` and the freeze; judge-to-judge agreement moved to item 189.
+
+- **`evals/catalog/costs.json` re-measured** (`python -m evals.eval_catalog measure --write`): `judge_grade`, `judge_distinctiveness` and `dataset_author` gain rows, and every other kind's means move because the sweep added rows to the whole-log aggregate. `--estimate` now prices the judges: the full golden-v1 floor is **$22.25 in assemble mode and $25.21 in generate mode** (it was $13.22 and $15.99 with the judges left out).
+- **`tests/test_eval_spend.py`:** four tests pinned "the judge kinds are unmeasured" against the real `costs.json` and failed once it was measured. They now build that state with a `judges_unmeasured` fixture, and one new test covers a priced judge kind.
+- **Measured, and limited:** `scenario_misaligned` hit 5 of 24 sampled cells (20.8%; the stub rehearsal's 0 of 96 does not carry over); judges are 48.5% of spend; the grounding judge reports about two years of tenure inflation on 4 of 28 outputs that the deterministic check misses (cause unexplained, handed to item 189). One purposive sample, one run each: costs of a pass, not rates for the set. `evals/README.md` and `docs/dev/eval-redesign-design.md` carry the updated wording and numbers.
+
 ### Fixed: entry-tier credentials follow the career start, and a posting can no longer prefer a credential the facts do not name; 26 cells regenerated (`feat/eval-dataset-v1-credentials`, item 194, findings 1 and 2)
 
 **The only paid calls were 29 author requests to `claude-opus-5-5` at effort `medium` (26 cells, three of them with one rewrite; $1.88 logged; the call log

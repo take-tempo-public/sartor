@@ -708,7 +708,13 @@ one direction, for a one-sided p below 0.05 (6 for a two-sided test). If a chang
 cases, that needs about 30 to 40 cases, so below about 20 cases most comparisons return INCONCLUSIVE. A cost
 for 48 cases is a guess: `AGENTS.md` says the 3-fixture synthetic suite costs about $0.30 to $0.40, about
 $0.10 to $0.13 per fixture, which scales to roughly $5 to $6 per arm per pass for 48 fixtures, and about double
-that at one fixture per JD (up to 96, 5.4). Not run; step 3b's calibration run measures it.
+that at one fixture per JD (up to 96, 5.4). Measured on a 28-fixture subset in assemble mode (24 cells, one per
+profession with the level rotated, plus 4 pairs): **$4.4414, about $0.162 per cell and $0.136 per pair, judges
+included** ([`docs/dev/blast-radius/eval-calibration-subset.md`](blast-radius/eval-calibration-subset.md)).
+Judges are 48.5% of that. Scaled by arithmetic to the 96 cells and 36 pairs it is about $20.5 in assemble mode;
+the estimate with the judges priced is a floor of $22.25 (assemble) and $25.21 (generate). The subset is
+purposive, one run each, so these are costs of a pass, not a rate. In the same subset 5 of 24 cells (20.8%) hit
+`scenario_misaligned`, so the iteration rubric is unevaluated for about one cell in five in assemble mode.
 
 **What the research did not settle (each blocks something, none blocks the others):**
 

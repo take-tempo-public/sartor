@@ -5,7 +5,8 @@ a client; `_get_client` is patched to raise wherever a flag must not need one.
 
 The estimate is a plan priced from `evals/catalog/costs.json`, so its expected values are derived from
 that file and `hardening.compute_call_cost` (the one pricing function), never hard-coded: re-measuring
-the costs does not break these tests.
+the costs does not break these tests. The "unmeasured" cases do not read the judge rows of the real file
+at all (`judges_unmeasured` drops them), so measuring the judges does not break them either.
 
 The fail-closed tie is `test_plan_matches_the_calls_a_stubbed_run_fires_*`: `runner._FIXTURE_CALLS` is a
 declared table, and these tests fail when the flow it describes changes.
@@ -61,6 +62,20 @@ def _price(call, model):
             "cache_read_input_tokens": row["cache_read"],
         }
     )
+
+
+JUDGE_KINDS = ("judge_distinctiveness", "judge_grade")
+
+
+@pytest.fixture
+def judges_unmeasured(monkeypatch):
+    """`costs.json` without the judge rows: the state `--estimate` reports as unmeasured.
+
+    The real file gained those rows once the judges logged calls (item 194), so a test about the
+    unmeasured case has to build that state, not read it.
+    """
+    kept = {call: row for call, row in cat.read_costs().items() if call not in JUDGE_KINDS}
+    monkeypatch.setattr(cat, "read_costs", lambda: kept)
 
 
 # ---------- the call plan ----------------------------------------------------------------------
@@ -120,7 +135,9 @@ def test_an_unreadable_expected_json_is_a_fixture_that_will_not_load(tmp_path, b
 # ---------- pricing ----------------------------------------------------------------------------
 
 
-def test_the_estimate_prices_each_measured_kind_at_its_pin_and_lists_the_rest_unmeasured():
+def test_the_estimate_prices_each_measured_kind_at_its_pin_and_lists_the_rest_unmeasured(
+    judges_unmeasured,
+):
     est = runner.estimate_spend(
         _synthetic(), runner._select_rubrics("smoke"), mode="generate", seed_mode=False
     )
@@ -131,9 +148,41 @@ def test_the_estimate_prices_each_measured_kind_at_its_pin_and_lists_the_rest_un
         3 * _price("generate", analyzer.SONNET_MODEL), abs=1e-6
     )
     assert est.total_usd == pytest.approx(sum(est.per_kind_usd.values()), abs=1e-6)
-    # The judge has logged no rows yet, so it is named, not priced at zero by accident.
-    assert set(est.unmeasured) == {"judge_distinctiveness", "judge_grade"}
+    # A kind with no row is named, not priced at zero by accident.
+    assert set(est.unmeasured) == set(JUDGE_KINDS)
     assert est.skipped_fixtures == ("corpus",)
+
+
+def test_a_judge_kind_with_measured_tokens_is_priced_at_the_judge_model_not_left_unmeasured(
+    judges_unmeasured, monkeypatch
+):
+    row = {
+        "input": 1000,
+        "output": 100,
+        "cache_write": 0,
+        "cache_read": 0,
+        "model": runner.JUDGE_MODEL,
+        "rows": 1,
+        "measured_on": "2026-10-31",
+    }
+    costs = {**cat.read_costs(), "judge_grade": row, "judge_distinctiveness": row}
+    monkeypatch.setattr(cat, "read_costs", lambda: costs)
+    est = runner.estimate_spend(
+        _synthetic(), runner._select_rubrics("smoke"), mode="generate", seed_mode=False
+    )
+    one = hardening.compute_call_cost(
+        {
+            "model": runner.JUDGE_MODEL,
+            "input_tokens": 1000,
+            "output_tokens": 100,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+        }
+    )
+    assert est.unmeasured == ()
+    assert est.per_kind_usd["judge_grade"] == pytest.approx(3 * one, abs=1e-6)
+    assert est.per_kind_usd["judge_distinctiveness"] == pytest.approx(3 * one, abs=1e-6)
+    assert est.total_usd == pytest.approx(sum(est.per_kind_usd.values()), abs=1e-6)
 
 
 def test_a_model_override_reprices_the_pin_it_moves_and_never_the_judge():
@@ -159,7 +208,7 @@ def test_a_model_override_reprices_the_pin_it_moves_and_never_the_judge():
     assert runner._pin_models({"JUDGE_MODEL": "x"})["JUDGE_MODEL"] == runner.JUDGE_MODEL
 
 
-def test_the_estimate_parses_only_the_catalog_entries_it_prices(monkeypatch):
+def test_the_estimate_parses_only_the_catalog_entries_it_prices(judges_unmeasured, monkeypatch):
     parsed = []
     real = cat._read_toml
     monkeypatch.setattr(cat, "_read_toml", lambda p: (parsed.append(p.name), real(p))[1])
@@ -179,7 +228,7 @@ def test_the_assemble_mode_check_matches_run_suite_s():
         runner.estimate_spend(_synthetic(), [], mode="bogus", seed_mode=False)
 
 
-def test_the_formatted_estimate_says_it_is_a_floor_and_what_it_left_out():
+def test_the_formatted_estimate_says_it_is_a_floor_and_what_it_left_out(judges_unmeasured):
     est = runner.estimate_spend(
         _synthetic(), runner._select_rubrics("smoke"), mode="generate", seed_mode=False
     )
@@ -195,7 +244,7 @@ def test_the_formatted_estimate_says_it_is_a_floor_and_what_it_left_out():
     assert "recommend_summary" in runner.format_estimate(assembled)
 
 
-def test_the_catalog_listing_has_one_line_per_call_kind():
+def test_the_catalog_listing_has_one_line_per_call_kind(judges_unmeasured):
     lines = runner.format_catalog_list().splitlines()
     assert len(lines) == 1 + len(cat.names())
     clarify = next(line for line in lines if line.startswith("clarify "))

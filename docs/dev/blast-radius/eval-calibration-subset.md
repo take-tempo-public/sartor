@@ -163,3 +163,22 @@ Pairs (n=4): judge_grade 24 calls $0.2711 ($0.0113 each), analyze_synthesis $0.1
 
 **Observed, unexplained: the judge's grounding rubric reports tenure inflation on 4 of 28 outputs, always about two years.** `admin-assistant-mid` (grounding 1.0): the output says "5 years", the judge counts "~2.8"; `medical-assistant-lead` (1.5): "13 years" against "~11" (employment from 2013-07); `registered-nurse-lead` (1.0): "12 years" against "~10" (from 2014); the pilot `web-backend-lead` (keyword_coverage): `years_claim_ungrounded:13_years_vs_calculated_11_years`. The deterministic `fabricated_specifics` check flagged **0** on all 28 records, so only the judge sees it. Read from the records, not verified against the text (not kept).
 - **Inferred, unproven (C-7): the judge may be counting years to a date about two years before the run.** For the first three, the pipeline's number equals (2026 − start year) and the judge's equals (about 2024 − start year). The judge payload has no current-date field (`evals/runner.py:2276-2288` builds it from the fixture, the context, the analysis and the generated text); `date.today()` at `runner.py:2057` feeds only the leak report. I did not read the rubric file for a date rule, and did not check whether `deterministic_analysis` carries one. A rival reading: the pipeline really does inflate tenure. Telling them apart needs either the generated text or one more judge call with a date line (about $0.011), which this branch has not run. **If the judge reading is right, the grounding rubric would mark a correct years claim as an invention, which bears on item 189 and on how this set is scored.**
+
+### Re-measure and re-price (2026-10-31)
+
+`python -m evals.eval_catalog measure --write` (dry run first; the judge rows it counted were 187 `judge_grade` and 28 `judge_distinctiveness`, exactly this branch's calls, so the log held no judge row before it). `costs.json`: `judge_grade` (input 8957, output 477) and `judge_distinctiveness` (input 796, output 77) added on `claude-haiku-4-5-20251001`; `dataset_author` added (182 rows, `claude-opus-5-5`, input 4067, output 2782); every other kind's means shifted because the sweep added rows to the whole-log aggregate (for example `iterate_clarify` went from 4 rows to 23, `generate_cover_letter` from 28 to 56, `recommend` from 97 to 125). **The means now lean on the golden-v1 assemble runs for those kinds**; the aggregate has no window or trace filter (`evals/eval_catalog.py:291-321`).
+
+**Tests:** red first. Against the new `costs.json`, 4 tests failed, all on the pins this dossier predicted: `test_the_estimate_prices_each_measured_kind_at_its_pin_and_lists_the_rest_unmeasured` (`set() == {judge_distinctiveness, judge_grade}`), `test_the_estimate_parses_only_the_catalog_entries_it_prices` (6 parsed, not 4), `test_the_formatted_estimate_says_it_is_a_floor_and_what_it_left_out`, `test_the_catalog_listing_has_one_line_per_call_kind` (judge line no longer shows ` - `). Fix: a `judges_unmeasured` fixture in `tests/test_eval_spend.py` drops the judge rows from `cat.read_costs`, the four tests use it, and one new test (`test_a_judge_kind_with_measured_tokens_is_priced_at_the_judge_model_not_left_unmeasured`) fixes the priced case with explicit token counts. `tests/test_eval_spend.py` + `tests/test_eval_catalog.py`: 84 passed, `ruff check` and `ruff format --check` clean.
+
+**Full-set estimate with the judges priced (`runner.py --suite golden-v1 --estimate`, floors, retries excluded):**
+
+| mode | calls | floor |
+|---|---|---|
+| generate | 1644 | **$25.2070** (was $15.9991 with the judges left out) |
+| assemble | 1776 | **$22.2519** (was $13.2246) |
+
+Judges in either: `judge_grade` 888 calls $10.0717, `judge_distinctiveness` 132 calls $0.1559. The estimate counts `iterate_clarify` for all 96 cells, and 5 of 24 sampled cells skipped it.
+
+**How well the estimate predicted this sample (arithmetic):** the estimate for one cell is $0.1760 and for one pair $0.1487 (every cell has the same call plan), so 24 cells + 4 pairs = $4.82 against $4.4414 actual: 8.5% high. The skipped iterations explain part of that; retries ($0.1422) push the other way. One sample, one mode.
+
+The Consumers table row 5 (the five pins in `tests/test_eval_spend.py`) is done as decided; rows 1 to 4 and 6 to 7 needed no change; row 8 (`evals/README.md`, the wiki page) is checked at the docs step below.
