@@ -18,4 +18,12 @@ Owner decisions 3 and 5: the judge model is chosen here with data, and there is 
 
 ## Updates
 
+### 2026-10-31 -- inputs from item 194's calibration subset (feat/eval-calibration-subset)
+
+Item 194 scope 3 asked for judge-to-judge agreement; the owner moved it here. Nothing on that branch measures agreement. What it leaves for this item (dossier: `docs/dev/blast-radius/eval-calibration-subset.md`):
+- **Judge cost, measured:** `judge_grade` about $0.0113 per call (187 calls), `judge_distinctiveness` about $0.0012 (28 calls); 48.5% of a 28-fixture assemble run's spend. A second judge on every record would add about that much again, or more on a larger pin.
+- **No harness support for a second judge:** `JUDGE_MODEL` is fixed (`evals/runner.py:131`), `--model-override` cannot move it, and a result record does not keep the judged text (`runner.py:469`), so a second judge has to be added to the live run, not run later over saved results.
+- **A judge parse failure is invisible in the call log:** 1 `judge_error` ("judge response was not valid JSON", recorded as score 0) while the log showed 0 non-ok rows.
+- **A judge defect to check first:** on 4 of 28 outputs the grounding judge counted about two fewer years of experience than the generated text claimed (for example 13 against 11), and the deterministic check flagged none. Counting the fixtures' own earliest role start to October 2026 gives the outputs' numbers (5.0, 13.3, 12.2, 12.9 years), so the outputs were right and the judge was short by about two years. The judge payload carries no current date (`evals/runner.py:2276-2288`). Inferred, untested: that the missing date is the cause. Grounding scores of 1.0 to 1.5 on three cells came from this; the grounding rubric needs the date in its payload before agreement, or any score of this set, means anything. A test: one fresh run of an affected fixture (for example `admin-assistant-mid--freight-company`) graded with and without a date line, about $0.17.
+
 ### 2026-10-20 -- filed during docs/eval-redesign-decisions
