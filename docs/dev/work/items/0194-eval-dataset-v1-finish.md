@@ -7,8 +7,8 @@ status = "open"
 depends_on = [191]
 decision_owner = "agent"
 epic = 180
-branches = ["feat/eval-dataset-v1-finish", "feat/eval-dataset-v1-credentials"]
-refs = ["docs/dev/eval-redesign-design.md", "docs/dev/blast-radius/eval-dataset-v1.md", "docs/dev/blast-radius/eval-dataset-v1-finish.md", "docs/dev/work/items/0191-eval-dataset-v1-generation.md"]
+branches = ["feat/eval-dataset-v1-finish", "feat/eval-dataset-v1-credentials", "feat/eval-calibration-subset"]
+refs = ["docs/dev/eval-redesign-design.md", "docs/dev/blast-radius/eval-dataset-v1.md", "docs/dev/blast-radius/eval-dataset-v1-finish.md", "docs/dev/blast-radius/eval-calibration-subset.md", "docs/dev/work/items/0191-eval-dataset-v1-generation.md"]
 summary = "Step 3b-iii: the cert-requirement fix (37 cells), calibration run, tier sizes, retire synthetic/, freeze golden-v1."
 ```
 
