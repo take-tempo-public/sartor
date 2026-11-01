@@ -71,8 +71,8 @@ Pairs (4): pair--accounting-entry-to-accounting-mid, pair--admin-assistant-mid-t
 
 ## Stop rules (fixed before any spend)
 
-- Spend is the **call log summed by trace id** (`hardening.compute_call_cost` over rows carrying this branch's trace ids), never a record's `cost_usd` and never the driver's own counter. Total cap **$5.00**; each runner call also carries `--max-spend 0.40`.
-- The driver stops before the next fixture if (spent so far) + (the dearest fixture so far) would exceed $5.00.
+- Spend is the **call log summed by trace id** (`hardening.compute_call_cost` over rows carrying this branch's trace ids), never a record's `cost_usd` and never the driver's own counter. Total cap **$10.00** (raised from $5.00 by the owner, chat 2026-10-31, after the pilot; the pilot's $0.1541 counts toward it); each runner call also carries `--max-spend 0.40`.
+- The driver stops before the next fixture if (spent so far) + (the dearest fixture so far) would exceed $10.00.
 - Stop and look on a pipeline error, a missing `eval_composite` record, or more than 2 `judge_error` records. `scenario_misaligned` is a measurement, not a stop.
 - The harness never runs alongside pytest or the gate (memory `reference-eval-harness-auth-and-cost`: that caused transient `judge_error`s).
 - After the pilot, **stop and report to the owner**; the sweep starts only on their go.
@@ -126,3 +126,40 @@ Command: `python -u evals/runner.py --fixture web-backend-lead--freight-startup 
 - Records the judges flagged on this one cell, read from the record, not verified against the text (it is not kept): `years_claim_ungrounded:13_years_vs_calculated_11_years` (keyword_coverage), `invented_metric` and `forbidden_pattern_match` with grounding still 4.8, `hedged_years_claim` (callback_likelihood). These are the judges' words about an assembled résumé; they are not a finding about the golden cell until read.
 
 **Projection for the rest (arithmetic, not a measurement):** 27 more fixtures at the pilot's $0.1541 is $4.16, so $4.31 in all, under the $5.00 cap by about $0.69. It is a projection from n=1 and the sign of the error is not obvious: a cell whose iteration lands adds `iterate_clarify` and a seventh judge (about $0.034), up to roughly $0.8 over 24 cells, which would put the total near the cap. The stop rule (spent + dearest-so-far over $5.00) halts the sweep before it crosses; the last pairs would be the ones left out.
+
+### Sweep: the other 23 cells and the 4 pairs (2026-10-31, owner's go and cap raised to $10.00)
+
+Driver: a scratch Python script, one `runner.py --fixture <dir> --mode assemble --max-spend 0.40` call per fixture, each with its own `--out-dir` and trace. Its own markers: `SWEEP_DONE total=$4.4414 fixtures_run=27`, `SWEEP_PROC_EXIT=0`; no stop rule fired. Every runner call exited 2 (the low-score gate, as in the pilot); all 28 fixtures wrote an `eval_composite` record. Everything below is from the 28 result files and the call log by trace id (`hardening.compute_call_cost`), analysed after the run.
+
+**Spend: $4.4414 over 424 call-log rows, 0 non-ok rows, 28 traces** (44% of the $10.00 cap; the $5.00 cap would also have held). Cells (n=24): mean $0.1624, min $0.1294, max $0.2075 (`carpenter-foreman-senior`). Pairs (n=4): mean $0.1361, min $0.1318, max $0.1428. The pilot-based projection of $4.31 was $0.13 low.
+
+| call (cells, n=24) | calls | $ | $/call |
+|---|---|---|---|
+| judge_grade | 163 | 1.8501 | 0.0114 |
+| analyze_synthesis | 24 | 0.8499 | 0.0354 |
+| generate_cover_letter | 24 | 0.3212 | 0.0134 |
+| iterate_clarify | 19 | 0.2801 | 0.0147 |
+| analyze_extraction | 24 | 0.1652 | 0.0069 |
+| clarify | 24 | 0.1635 | 0.0068 |
+| analyze_extraction_retry | 13 | 0.0939 | 0.0072 |
+| recommend | 24 | 0.0653 | 0.0027 |
+| recommend_summary | 24 | 0.0396 | 0.0017 |
+| analyze_synthesis_retry | 1 | 0.0328 | 0.0328 |
+| judge_distinctiveness | 24 | 0.0286 | 0.0012 |
+| recommend_retry | 3 | 0.0067 | 0.0022 |
+
+Pairs (n=4): judge_grade 24 calls $0.2711 ($0.0113 each), analyze_synthesis $0.1296, generate_cover_letter $0.0567, analyze_extraction $0.0299, clarify $0.0264, recommend $0.0103, recommend_summary $0.0071, recommend_retry 2 calls $0.0049, judge_distinctiveness $0.0045, recommend_summary_retry 3 calls $0.0039.
+
+- **Judges are 48.5% of all spend** ($2.1543 of $4.4414): `judge_grade` 187 calls, about $0.0113 each; `judge_distinctiveness` 28 calls, about $0.0012 each. A cell makes about 6.8 `judge_grade` calls (163 over 24 cells).
+- **Retries are $0.1422 (3.2%)**: `analyze_extraction_retry` on 13 of 24 cells (54%) and on 0 of 4 pairs; `analyze_synthesis_retry` 1; `recommend_retry` 3 on cells and 2 on pairs; `recommend_summary_retry` 3 on pairs. The cause of the extraction retries was not examined. The estimate excludes retries, and `eval_catalog measure` skips `*_retry` rows (`evals/eval_catalog.py:304-308`).
+
+**`scenario_misaligned` (assemble mode, cells only; pairs carry no scenarios): 5 of 24 cells (20.8%).** `iteration_quality` therefore has 19 `ok` records and 5 `scenario_misaligned`; `iterate_clarify` fired 19 times, matching. The 5: `mobile-entry`, `project-mgmt-senior`, `social-services-senior`, `sre-ops-lead`, `web-backend-lead`. By level: entry 1 of 6, mid 0 of 6, senior 2 of 6, lead 2 of 6 (counts, not a trend). A Wilson 95% interval on 5 of 24 is about 9% to 41% (arithmetic). The sample is purposive (one cell per profession, level rotated), not random over the 96, and the design doc says results below about 20 cases are directional, so this supports "about one cell in five in this sample, and not zero", not a rate for the set. **The stub rehearsal's 0 of 96 does not carry over.** Why the edit target is missing from the assembled résumé was not examined: the code path is `target not in generated_resume` (`evals/runner.py:1193-1207`), and the records do not keep the text.
+
+**`judge_error`: 1 of 215 judge calls** (187 `judge_grade` + 28 `judge_distinctiveness`): `electrician-senior--industrial-contractor` × `tone`, reason "judge response was not valid JSON", recorded with `score 0`. The call-log row for that request has status `ok`, so the call log shows 0 non-ok rows while one grading failed: a parse failure is visible only in the result record. Exclude it from means (cell `tone` mean 3.57 over 23 `ok` records).
+
+**Scores by rubric, `ok` records only (cells n=24, pairs n=4):** ats_format 4.10 / 4.17; callback_likelihood 3.50 / 1.98; clarification_quality 4.07 / 3.95; grounding 3.96 / 4.85; iteration_quality 3.64 (n=19) / none; keyword_coverage 3.42 / 2.35; tone 3.57 (n=23) / 2.02. `eval_composite`: cells mean 3.648, pairs mean 2.783, all 28 mean 3.524 (min 2.224, max 4.035). **No score here is a baseline or a floor:** 28 fixtures, one run each, one purposive sample, Haiku 4.5 as the only judge, which the design doc calls ±0.6 noisy.
+
+- **Pairs score lower on callback, keyword and tone by construction** (a résumé against a different tier's or profession's posting). The two `change` pairs have the lowest composites (`web-backend-mid-to-data-ml-mid` 2.224, `mobile-lead-to-ux-design-lead` 2.612); the `advance` pairs read 2.871 and 3.424. n=4, direction only. `web-backend-mid-to-data-ml-mid` got `tone` 0.0 with `ok` status and the failed rules `not_a_cover_letter`, `wrong_genre`, `self_disqualifying`, `no_pitch_structure`: the judge says the generated cover letter for that pair was not a cover letter. The text is not kept; I did not look into it.
+
+**Observed, unexplained: the judge's grounding rubric reports tenure inflation on 4 of 28 outputs, always about two years.** `admin-assistant-mid` (grounding 1.0): the output says "5 years", the judge counts "~2.8"; `medical-assistant-lead` (1.5): "13 years" against "~11" (employment from 2013-07); `registered-nurse-lead` (1.0): "12 years" against "~10" (from 2014); the pilot `web-backend-lead` (keyword_coverage): `years_claim_ungrounded:13_years_vs_calculated_11_years`. The deterministic `fabricated_specifics` check flagged **0** on all 28 records, so only the judge sees it. Read from the records, not verified against the text (not kept).
+- **Inferred, unproven (C-7): the judge may be counting years to a date about two years before the run.** For the first three, the pipeline's number equals (2026 − start year) and the judge's equals (about 2024 − start year). The judge payload has no current-date field (`evals/runner.py:2276-2288` builds it from the fixture, the context, the analysis and the generated text); `date.today()` at `runner.py:2057` feeds only the leak report. I did not read the rubric file for a date rule, and did not check whether `deterministic_analysis` carries one. A rival reading: the pipeline really does inflate tenure. Telling them apart needs either the generated text or one more judge call with a date line (about $0.011), which this branch has not run. **If the judge reading is right, the grounding rubric would mark a correct years claim as an invention, which bears on item 189 and on how this set is scored.**
